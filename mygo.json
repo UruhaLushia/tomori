@@ -1,0 +1,9 @@
+{
+  "name": "tomori",
+  "identifier": "com.example.tomori",
+  "version": "0.1.0",
+  "main": "./cmd/tomori",
+  "i18n": { "dir": "locales", "source": "zh-Hans" },
+  "urlSchemes": ["tomori"],
+  "out": "build"
+}

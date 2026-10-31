@@ -1,0 +1,7 @@
+/build/
+/.mygo/
+/.shots/
+/.agents/
+mygo_windows_*.syso
+
+/tomori*

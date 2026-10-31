@@ -1,0 +1,69 @@
+name: Cross-platform build
+
+on:
+  workflow_call:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+
+      - name: Set up Go
+        uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Build with MyGo
+        env:
+          CGO_ENABLED: 0
+        run: >-
+          go tool mygo build
+          -platform windows/amd64,windows/arm64,linux/amd64,linux/arm64,linux/loong64,darwin/amd64,darwin/arm64
+          -skip-installer
+          -skip-dmg
+          -o dist
+
+      - name: Prepare release packages
+        run: |
+          mkdir -p release
+          for target in windows-amd64 windows-arm64 linux-amd64 linux-arm64 linux-loong64 darwin-amd64 darwin-arm64; do
+            source="dist/$target"
+            case "$target" in
+              windows-*)
+                cp "$source/tomori.exe" "release/tomori-$target.exe"
+                ;;
+              darwin-*)
+                tar -czf "release/tomori-$target.tar.gz" -C "$source" tomori.app
+                ;;
+              linux-*)
+                shopt -s nullglob
+                files=("$source"/*.tar.gz "$source"/*.deb)
+                if ((${#files[@]} == 0)); then
+                  cp "$source/tomori" "release/tomori-$target"
+                  continue
+                fi
+                for file in "${files[@]}"; do
+                  case "$file" in
+                    *.tar.gz) cp "$file" "release/tomori-$target.tar.gz" ;;
+                    *.deb) cp "$file" "release/tomori-$target.deb" ;;
+                    *) echo "Unsupported Linux package: $file" >&2; exit 1 ;;
+                  esac
+                done
+                ;;
+            esac
+          done
+
+      - name: Upload release packages
+        uses: actions/upload-artifact@v7
+        with:
+          name: tomori-release
+          path: release
+          if-no-files-found: error
+          retention-days: 7
