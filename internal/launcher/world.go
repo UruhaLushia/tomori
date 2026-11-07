@@ -213,8 +213,8 @@ func (s *Service) lockWorldRoots(ctx context.Context, progress func(minecraft.Pr
 	keys = slices.Compact(keys)
 	var releases []func()
 	release := func() {
-		for i := len(releases) - 1; i >= 0; i-- {
-			releases[i]()
+		for _, release := range slices.Backward(releases) {
+			release()
 		}
 	}
 	for _, root := range keys {

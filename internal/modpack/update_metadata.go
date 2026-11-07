@@ -31,7 +31,7 @@ func metadataPath(name string) error {
 	if name == "" || len(name) > 4096 || strings.Contains(name, "\\") || strings.Count(name, "/") >= 128 {
 		return invalidMetadata()
 	}
-	for _, part := range strings.Split(name, "/") {
+	for part := range strings.SplitSeq(name, "/") {
 		if fsutil.ValidateID(part) != nil || part == "." || part == ".." || strings.HasPrefix(strings.ToLower(part), ".tomori-pack-update-") || strings.HasPrefix(strings.ToLower(part), ".tomori-pack-config-") || strings.HasPrefix(strings.ToLower(part), ".tomori-write-") {
 			return invalidMetadata()
 		}

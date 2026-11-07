@@ -201,11 +201,12 @@ func fpsChart(c *ui.Context, samples []fpsSample) {
 		for i := 0; i <= 4; i++ {
 			value := minValue + (maxValue-minValue)*float64(4-i)/4
 			y := plot.Y + plot.H*float32(i)/4
-			if i == 0 {
+			switch i {
+			case 0:
 				y += 1
-			} else if i == 4 {
+			case 4:
 				y -= fontSize
-			} else {
+			default:
 				y -= fontSize / 2
 			}
 			p.Text(r.X, y, fmt.Sprintf("%.0f", value), fontSize, labelColor)
@@ -224,9 +225,10 @@ func fpsChart(c *ui.Context, samples []fpsSample) {
 		for i, label := range []string{"-10s", "-5s", "now"} {
 			x := plot.X + plot.W*float32(i)/2
 			labelWidth := kit.TextWidth(c, label, kit.Caption)
-			if i == 1 {
+			switch i {
+			case 1:
 				x -= labelWidth / 2
-			} else if i == 2 {
+			case 2:
 				x -= labelWidth
 			}
 			p.Text(x, plot.Y+plot.H+2, label, fontSize, labelColor)

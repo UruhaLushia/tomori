@@ -6,6 +6,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"slices"
 	"strconv"
 	"strings"
 	"sync"
@@ -310,8 +311,8 @@ func (p *RecoveryPlan) Apply(ctx context.Context, progress func(int, int)) (stri
 		set   *updateSet
 		files []recoveryFile
 	}{{p.config, p.controls}, {p.content, p.files}} {
-		for i := len(item.files) - 1; i >= 0; i-- {
-			if err := item.set.step(ctx, func() error { return recoverFile(ctx, item.set, i, item.files[i]) }); err != nil {
+		for i, v := range slices.Backward(item.files) {
+			if err := item.set.step(ctx, func() error { return recoverFile(ctx, item.set, i, v) }); err != nil {
 				return "", err
 			}
 			done++

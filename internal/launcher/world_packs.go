@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 
 	"github.com/UruhaLushia/tomori/internal/fsutil"
@@ -126,8 +127,8 @@ func (s *Service) ChangeWorldPacks(ctx context.Context, instance minecraft.Insta
 	stage = filepath.Base(stage)
 	var moved []string
 	rollback := func(cause error) error {
-		for i := len(moved) - 1; i >= 0; i-- {
-			name := moved[i]
+		for _, name := range slices.Backward(moved) {
+
 			if _, err := root.Lstat(name); !errors.Is(err, os.ErrNotExist) {
 				return errors.Join(cause, fmt.Errorf(locales.CouldNotRestoreResourceBackupAt(), filepath.Join(w.path, "datapacks", stage), errors.New(locales.ResourceChangedRefreshTheList())))
 			}
@@ -174,8 +175,8 @@ func (s *Service) ImportWorldPacks(ctx context.Context, instance minecraft.Insta
 	}
 	var imported []importedPack
 	rollback := func(cause error) error {
-		for i := len(imported) - 1; i >= 0; i-- {
-			item := imported[i]
+		for _, item := range slices.Backward(imported) {
+
 			path := filepath.Join("datapacks", item.name)
 			info, err := w.root.Lstat(path)
 			if errors.Is(err, os.ErrNotExist) {

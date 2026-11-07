@@ -173,8 +173,7 @@ func (a *app) updateResources(items []resourcecatalog.ResourceUpdate) {
 				}
 				if !errors.Is(err, context.Canceled) {
 					r.data.UpdateError = err.Error()
-					var missing *resourcecatalog.MissingFilesError
-					if errors.As(err, &missing) {
+					if missing, ok := errors.AsType[*resourcecatalog.MissingFilesError](err); ok {
 						a.showMissingResources(missing.Files, nil, items)
 					}
 				}

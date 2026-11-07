@@ -121,8 +121,7 @@ func (f *Client) fetchFrom(ctx context.Context, t Task, progress func(int64), so
 			if err == nil {
 				return nil
 			}
-			var invalid *verificationError
-			if !errors.As(err, &invalid) {
+			if _, ok := errors.AsType[*verificationError](err); !ok {
 				return err
 			}
 		}
@@ -188,8 +187,7 @@ func (f *Client) fetchURL(ctx context.Context, url string, t Task, progress func
 		}
 		last = err
 		var response *responseError
-		var sizeLimit *sizeLimitError
-		if errors.As(err, &sizeLimit) {
+		if _, ok := errors.AsType[*sizeLimitError](err); ok {
 			break
 		}
 		if errors.As(err, &response) && response.code >= 400 && response.code < 500 && response.code != http.StatusRequestTimeout && response.code != http.StatusTooManyRequests {

@@ -604,8 +604,7 @@ func (a *app) installResource(version resourcecatalog.Version, policy resource.I
 			if err != nil {
 				if current && a.resources.data.Source == version.Source && !errors.Is(err, context.Canceled) {
 					a.resources.data.Error = err.Error()
-					var missing *resourcecatalog.MissingFilesError
-					if errors.As(err, &missing) {
+					if missing, ok := errors.AsType[*resourcecatalog.MissingFilesError](err); ok {
 						a.showMissingResources(missing.Files, &version, nil, policy)
 					}
 				}

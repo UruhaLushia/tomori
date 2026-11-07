@@ -129,7 +129,7 @@ func libraryCoordinate(name string) string {
 func legacyArguments(raw string) []Argument {
 	// Mojang legacy metadata uses whitespace-separated flags and placeholders.
 	var args []Argument
-	for _, value := range strings.Fields(raw) {
+	for value := range strings.FieldsSeq(raw) {
 		args = append(args, Argument{Value: ArgumentValue{value}})
 	}
 	return args

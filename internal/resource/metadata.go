@@ -8,6 +8,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 
 	"github.com/pelletier/go-toml/v2"
@@ -218,8 +219,8 @@ func componentText(raw json.RawMessage) string {
 		case string:
 			text.WriteString(value)
 		case []any:
-			for i := len(value) - 1; i >= 0; i-- {
-				pending = append(pending, value[i])
+			for _, v := range slices.Backward(value) {
+				pending = append(pending, v)
 			}
 		}
 	}

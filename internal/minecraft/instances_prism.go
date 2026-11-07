@@ -158,8 +158,8 @@ func ReadPrismInstance(path string) (Instance, error) {
 		}
 	}
 	instance := Instance{
-		VersionSummary: VersionSummary{ID: "prism:" + filepath.Base(path), Type: "prism"},
-		Name:           name, InstanceDir: path, Format: InstancePrism,
+		ID: "prism:" + filepath.Base(path), Type: "prism",
+		Name: name, InstanceDir: path, Format: InstancePrism,
 		GameDir: filepath.Join(path, "minecraft"),
 		IconKey: iconKey,
 	}

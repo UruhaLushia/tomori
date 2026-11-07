@@ -67,7 +67,7 @@ func ReadManaged(path string) (Instance, error) {
 		m.GameVersion = v.MinecraftVersion
 		m.Loaders, m.Loader = localLoaders(v, m.GameVersion)
 	}
-	return Instance{VersionSummary: VersionSummary{ID: m.Version, Type: "modpack", Time: m.ImportedAt, ReleaseTime: m.ImportedAt}, Name: m.Name, Description: m.Description, GameVersion: m.GameVersion, Loader: m.Loader, Loaders: m.Loaders, GameDir: root, InstanceDir: path, Format: InstanceManaged, PackFormat: m.PackFormat, PackVersion: m.PackVersion, PackSource: m.PackSource}, v.Validate()
+	return Instance{ID: m.Version, Type: "modpack", Time: m.ImportedAt, ReleaseTime: m.ImportedAt, Name: m.Name, Description: m.Description, GameVersion: m.GameVersion, Loader: m.Loader, Loaders: m.Loaders, GameDir: root, InstanceDir: path, Format: InstanceManaged, PackFormat: m.PackFormat, PackVersion: m.PackVersion, PackSource: m.PackSource}, v.Validate()
 }
 
 func discoverManagedInstances(ctx context.Context, root string) ([]Instance, []error, error) {

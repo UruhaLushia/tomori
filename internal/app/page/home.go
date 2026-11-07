@@ -2,12 +2,12 @@ package page
 
 import (
 	"fmt"
-	"github.com/egoist/mygo/ui"
-	"time"
 	"github.com/UruhaLushia/tomori/internal/account"
 	"github.com/UruhaLushia/tomori/internal/kit"
 	"github.com/UruhaLushia/tomori/internal/minecraft"
 	"github.com/UruhaLushia/tomori/locales"
+	"github.com/egoist/mygo/ui"
+	"time"
 )
 
 type HomeData struct {
@@ -188,7 +188,7 @@ func (p *HomeState) switchPanel(c *ui.Context, data HomeData, actions HomeAction
 		ui.Column(c).FillWidth().Padding(4, 0, kit.Gap(c), 0).Gap(8).Children(func() {
 			for start := 0; start < len(matches); start += cols {
 				ui.Row(c).FillWidth().Gap(8).Children(func() {
-					for j := 0; j < cols; j++ {
+					for j := range cols {
 						i := start + j
 						if i >= len(matches) {
 							ui.Box(c).Grow(1).Basis(0).MinWidth(0)
@@ -287,7 +287,7 @@ func homeStatus(c *ui.Context, data HomeData, actions HomeActions) {
 			} else if dot {
 				kit.StatusDot(c, color)
 			} else {
-				ui.Icon(c, icon).FontSize(kit.IconPx(16)).TextColor(color)
+				ui.Icon(c, icon).FontSize(16).TextColor(color)
 			}
 		})
 		ui.Row(c).Grow(1).MinWidth(0).Gap(8).AlignItems(ui.Center).Children(func() {
@@ -330,7 +330,7 @@ func characterTile(c *ui.Context, data HomeData, actions HomeActions) {
 	}
 	el.Children(func() {
 		if data.Account.ID == "" {
-			ui.Box(c).Size(28, 28).Shrink(0).Radius(kit.RadiusS).Center().Background(kit.AccentSoft).Children(func() { ui.Icon(c, kit.User).FontSize(kit.IconPx(16)).TextColor(kit.AccentText) })
+			ui.Box(c).Size(28, 28).Shrink(0).Radius(kit.RadiusS).Center().Background(kit.AccentSoft).Children(func() { ui.Icon(c, kit.User).FontSize(16).TextColor(kit.AccentText) })
 		} else {
 			kit.PlayerAvatar(c, data.Avatar, data.Account.Initial(), 28)
 		}
@@ -347,7 +347,7 @@ func characterTile(c *ui.Context, data HomeData, actions HomeActions) {
 				kit.Line(c, data.Account.Label(), kit.Caption)
 			}
 		})
-		ui.Icon(c, kit.UpDown).FontSize(kit.IconPx(16)).TextColor(kit.Muted)
+		ui.Icon(c, kit.UpDown).FontSize(16).TextColor(kit.Muted)
 	})
 	kit.AccountMenu(c, el, data.Accounts, actions.SelectAccount, actions.AddAccount, actions.ManageAccounts)
 }

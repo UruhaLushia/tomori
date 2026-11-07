@@ -74,7 +74,7 @@ func ToastViewport(c *ui.Context, bottom float32) {
 	ui.ToastViewportBase(c, func(viewport ui.Element, toasts []ui.Toast) {
 		pad := Pad(c)
 		viewport.Padding(pad, pad+12, bottom, pad+12).Gap(8).AlignItems(ui.End).Justify(ui.End)
-		for i := 0; i < len(toasts); i++ {
+		for i := range toasts {
 			notice := toasts[i]
 			confirmation, confirmable := notice.Data.(ToastConfirmation)
 			if confirmable {

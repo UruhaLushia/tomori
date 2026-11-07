@@ -29,7 +29,7 @@ type packRecoveryRecord struct {
 }
 
 func (r packRecoveryRecord) instance() minecraft.Instance {
-	return minecraft.Instance{VersionSummary: minecraft.VersionSummary{ID: r.ID}, Name: r.Name, Format: r.Format, InstanceDir: r.InstanceDir, GameDir: r.GameDir}
+	return minecraft.Instance{ID: r.ID, Name: r.Name, Format: r.Format, InstanceDir: r.InstanceDir, GameDir: r.GameDir}
 }
 
 func invalidRecoveryRecord() error { return errors.New(locales.InvalidInterruptedUpdateRecord()) }

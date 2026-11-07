@@ -140,7 +140,7 @@ func appearancePreview(c *ui.Context, d *AppearanceData, actions AppearanceActio
 			} else if d.Fallback != nil {
 				ui.Image(c, d.Fallback).Size(64, 64).Fit(ui.Contain)
 			} else {
-				ui.Icon(c, kit.User).FontSize(kit.IconPx(20)).TextColor(kit.Muted)
+				ui.Icon(c, kit.User).FontSize(20).TextColor(kit.Muted)
 			}
 		})
 		kit.SegmentedValues(c, &d.Variant, []kit.SelectOption[string]{{Value: "classic", Label: locales.Classic()}, {Value: "slim", Label: locales.Slim()}}, actions.Model).

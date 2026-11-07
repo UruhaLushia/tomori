@@ -9,6 +9,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"runtime"
+	"slices"
 	"sort"
 	"strconv"
 	"strings"
@@ -63,13 +64,7 @@ func InspectExecutable(ctx context.Context, path string) (Runtime, error) {
 	if runtime.GOOS == "windows" {
 		name = strings.ToLower(name)
 	}
-	valid := false
-	for _, candidate := range ExecutableNames() {
-		if name == candidate {
-			valid = true
-			break
-		}
-	}
+	valid := slices.Contains(ExecutableNames(), name)
 	if !valid {
 		return Runtime{}, errors.New(locales.SelectAJavaExecutable())
 	}
@@ -232,8 +227,8 @@ func parseOutput(text string) (version, vendor, arch string) {
 			const marker = "version \""
 			if start := strings.Index(line, marker); start >= 0 {
 				value := line[start+len(marker):]
-				if end := strings.IndexByte(value, '"'); end >= 0 {
-					version = value[:end]
+				if before, _, ok := strings.Cut(value, "\""); ok {
+					version = before
 				}
 			}
 		}

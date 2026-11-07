@@ -175,8 +175,8 @@ func discoverMinecraftInstances(ctx context.Context, gameDir string) ([]Instance
 		gameVersion := ProfileGameVersion(v, "")
 		loaders, loaderLabel := localLoaders(v, gameVersion)
 		list = append(list, Instance{
-			VersionSummary: VersionSummary{ID: id, Type: v.Type, Time: v.Time, ReleaseTime: v.ReleaseTime},
-			Name:           id, GameVersion: gameVersion, GameDir: gameDir,
+			ID: id, Type: v.Type, Time: v.Time, ReleaseTime: v.ReleaseTime,
+			Name: id, GameVersion: gameVersion, GameDir: gameDir,
 			Loaders: loaders, Loader: loaderLabel,
 			InstanceDir: filepath.Join(gameDir, "versions", id), Format: InstanceMinecraft,
 		})

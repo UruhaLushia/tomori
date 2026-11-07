@@ -95,24 +95,25 @@ func Diagnostic(err error) string {
 	if !errors.As(err, &remote) {
 		return err.Error()
 	}
-	info := fmt.Sprintf("%s [endpoint=%s HTTP=%d", err, remote.Endpoint, remote.Status)
+	var info strings.Builder
+	fmt.Fprintf(&info, "%s [endpoint=%s HTTP=%d", err, remote.Endpoint, remote.Status)
 	switch remote.Code {
 	case "invalid_grant", "interaction_required", "invalid_client", "unauthorized_client",
 		"authorization_declined", "access_denied", "expired_token", "invalid_scope",
 		"invalid_request", "authorization_pending", "slow_down", "bad_verification_code",
 		"invalid_resource", "temporarily_unavailable", "server_error":
-		info += " code=" + remote.Code
+		fmt.Fprintf(&info, " code=%s", remote.Code)
 	}
 	for _, code := range remote.ErrorCodes[:min(5, len(remote.ErrorCodes))] {
-		info += fmt.Sprintf(" AADSTS%d", code)
+		fmt.Fprintf(&info, " AADSTS%d", code)
 	}
 	if remote.XErr != 0 {
-		info += fmt.Sprintf(" XErr=%d", remote.XErr)
+		fmt.Fprintf(&info, " XErr=%d", remote.XErr)
 	}
 	if remote.InvalidApp {
-		info += " reason=InvalidAppRegistration"
+		info.WriteString(" reason=InvalidAppRegistration")
 	}
-	return info + "]"
+	return info.String() + "]"
 }
 
 func (c *Client) request(ctx context.Context, method, endpoint, bearer string, body any, result any, status ...int) error {

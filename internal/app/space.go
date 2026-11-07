@@ -3,6 +3,7 @@ package app
 import (
 	"context"
 	"slices"
+	"strings"
 	"time"
 
 	"github.com/UruhaLushia/tomori/internal/app/page"
@@ -88,11 +89,11 @@ func (a *app) assessPackSpace() {
 	}
 	info, directory, optional := p.data.Info, p.data.Directory, p.data.Optional
 	info = info.WithOptional(p.data.SelectedOptional)
-	selection := ""
+	var selection strings.Builder
 	for _, file := range info.Files {
 		if file.Optional {
 			optional = true
-			selection += "\x00" + file.SelectionKey()
+			selection.WriteString("\x00" + file.SelectionKey())
 		}
 	}
 	preview := p.preview
@@ -102,7 +103,7 @@ func (a *app) assessPackSpace() {
 		preview = &selected
 	}
 	key := p.archive.SHA512 + "\x00" + directory
-	key += selection
+	key += selection.String()
 	if preview != nil {
 		key += "\x00" + preview.Version.URL
 	}

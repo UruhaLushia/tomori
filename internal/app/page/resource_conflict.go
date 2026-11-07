@@ -99,7 +99,6 @@ func (p *Resources) targetDialog(c *ui.Context, data *ResourcesData, actions Res
 			ui.Scroll(c).Scrollbars(false).FillWidth().Grow(1).MinHeight(0).Children(func() {
 				ui.Column(c).FillWidth().Gap(4).Children(func() {
 					for _, target := range targets {
-						target := target
 						row := kit.RowButton(c, "", false, func() {
 							p.targetOpen = false
 							p.pendingTarget = nil

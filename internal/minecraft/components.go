@@ -9,6 +9,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"maps"
 	"os"
 	"path/filepath"
 	"slices"
@@ -327,9 +328,7 @@ func componentConfiguration(ctx context.Context, instance Instance, expected [32
 		return err
 	}
 	delete(fields, "inheritsFrom")
-	for key, value := range replacement {
-		fields[key] = value
-	}
+	maps.Copy(fields, replacement)
 	raw, err = json.MarshalIndent(fields, "", "  ")
 	if err != nil {
 		return err

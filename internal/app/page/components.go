@@ -113,7 +113,7 @@ func (p *Components) gameInput(c *ui.Context, data *ComponentsData, actions Comp
 			actions.Loaders(data.Game, p.editor.loader)
 		}).Children(func() {
 			kit.Label(c, data.Game, kit.Body).Grow(1).MinWidth(0).SingleLine().Ellipsis("…")
-			ui.Icon(c, kit.ChevronRight).FontSize(kit.IconPx(12)).Rotate(90).TextColor(kit.Muted)
+			ui.Icon(c, kit.ChevronRight).FontSize(12).Rotate(90).TextColor(kit.Muted)
 		})
 		input.Popup(func(panel ui.Element) {
 			kit.PopupPanel(c, panel, 320, input.Trigger)

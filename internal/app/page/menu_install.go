@@ -13,7 +13,7 @@ func (p *Instances) installMenu(c *ui.Context, busy bool, newInstall, importPack
 	var trigger ui.Element
 	if p.inline {
 		trigger = kit.SelectTrigger(c, menu.Trigger.Disabled(busy), menu.Open()).Size(32, 32).Padding(0).Center().Label(locales.NewInstance())
-		trigger.Children(func() { ui.Icon(c, kit.Plus).FontSize(kit.IconPx(16)) })
+		trigger.Children(func() { ui.Icon(c, kit.Plus).FontSize(16) })
 	} else {
 		trigger = kit.PrimaryMenuButton(c, menu.Trigger.Disabled(busy), locales.New2(), menu.Open())
 	}

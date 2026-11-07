@@ -3,6 +3,7 @@ package diagnostic
 import (
 	"context"
 	"fmt"
+	"slices"
 	"strings"
 	"time"
 	"unicode/utf8"
@@ -87,10 +88,8 @@ func Analyze(ctx context.Context, records []Record) ([]Finding, error) {
 		}
 		item := &findings[index]
 		line = excerpt(strings.TrimSpace(line), 512)
-		for _, old := range item.Evidence {
-			if old == line {
-				return
-			}
+		if slices.Contains(item.Evidence, line) {
+			return
 		}
 		if len(item.Evidence) < 3 {
 			item.Evidence = append(item.Evidence, line)

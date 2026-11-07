@@ -1,10 +1,10 @@
 package page
 
 import (
-	"github.com/egoist/mygo/ui"
 	"github.com/UruhaLushia/tomori/internal/kit"
 	"github.com/UruhaLushia/tomori/internal/launcher"
 	"github.com/UruhaLushia/tomori/locales"
+	"github.com/egoist/mygo/ui"
 )
 
 type PackRecoveryData struct {
@@ -57,7 +57,7 @@ func (p *PackRecovery) View(c *ui.Context, data *PackRecoveryData, actions PackR
 								kit.Label(c, label, kit.Body).TextColor(kit.Muted).MaxLines(2).Wrap()
 								kit.Label(c, item.Content, kit.Body).TextColor(kit.Muted).MaxLines(1).Ellipsis("…")
 							})
-							ui.Icon(c, kit.ChevronRight).FontSize(kit.IconPx(16)).TextColor(kit.Muted).Shrink(0)
+							ui.Icon(c, kit.ChevronRight).FontSize(16).TextColor(kit.Muted).Shrink(0)
 						})
 						kit.IconButton(c, kit.Folder, false, func() { actions.OpenDirectory(item.Instance.InstanceDir) }).Label(locales.OpenInstanceFolder())
 					})

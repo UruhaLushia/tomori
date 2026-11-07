@@ -106,7 +106,7 @@ func (p *downloadTaskView) row(c *ui.Context, job DownloadJob, cancel func(uint6
 			if p.expanded {
 				rotation = 90
 			}
-			ui.Icon(c, kit.ChevronRight).FontSize(kit.IconPx(12)).AnimatePose(ui.Pose{Rotate: rotation}, kit.MotionMove).TextColor(kit.Muted)
+			ui.Icon(c, kit.ChevronRight).FontSize(12).AnimatePose(ui.Pose{Rotate: rotation}, kit.MotionMove).TextColor(kit.Muted)
 		})
 		size := fmt.Sprintf("%s / %s", transferSize(job.Done), transferSize(job.Total))
 		ui.Row(c).FillWidth().Gap(8).AlignItems(ui.Center).Children(func() {

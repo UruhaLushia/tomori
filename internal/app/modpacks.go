@@ -233,8 +233,7 @@ func (a *app) importPack() {
 			if err != nil {
 				if !errors.Is(err, context.Canceled) && p.request == dialogRequest {
 					p.data.Error = err.Error()
-					var missing *modpack.MissingFilesError
-					if errors.As(err, &missing) {
+					if missing, ok := errors.AsType[*modpack.MissingFilesError](err); ok {
 						p.data.Open = true
 						p.data.Missing = missing.Files
 					}

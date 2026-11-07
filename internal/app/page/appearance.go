@@ -244,7 +244,7 @@ func (p *Appearance) accentPicker(c *ui.Context, cfg *config.Appearance, save fu
 			color = kit.ProgressMuted
 		}
 		button := kit.ColorSwatch(c, color, !preset, func() { p.accentOpen = !p.accentOpen }).Label(locales.CustomAccentColor()).Expanded(p.accentOpen)
-		button.Center().Children(func() { ui.Icon(c, kit.Plus).FontSize(kit.IconPx(12)).TextColor(kit.Surface) })
+		button.Center().Children(func() { ui.Icon(c, kit.Plus).FontSize(12).TextColor(kit.Surface) })
 		ui.PopoverBase(c, button, &p.accentOpen, func(panel ui.Element) {
 			kit.PopupPanel(c, panel, 240, button).AttachTo(button, ui.AnchorBottomEnd, ui.AnchorTopEnd).Padding(12)
 			ui.ColorPicker(c, &p.accent).FillWidth().MinWidth(0).OnChange(func() { cfg.Accent = kit.HexColor(p.accent); p.accentModel = cfg.Accent; save() })
@@ -286,7 +286,7 @@ func (f *fontChoice) input(c *ui.Context, value *string, fonts []string, label s
 		Background(kit.InsetColor).TextColor(kit.Text).FontSize(kit.FontPx(kit.Body)).
 		Border(1, kit.LineColor).Padding(0, 10).PaddingEnd(38).Label(label)
 	input.DrawOver(func(p *ui.Painter, r ui.Rect) {
-		size := kit.IconPx(12)
+		size := float32(12)
 		endWidth := kit.W(36)
 		// Keep long font names from painting over the dropdown affordance.
 		p.Fill(ui.Rect{X: r.X + r.W - endWidth, Y: r.Y + 1, W: endWidth - 1, H: r.H - 2}, kit.InsetColor, 0)

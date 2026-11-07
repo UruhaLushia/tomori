@@ -203,7 +203,7 @@ func (p *Logs) history(c *ui.Context, data LogHistoryData, actions LogsActions) 
 							kit.Line(c, file.Name, kit.Caption)
 							kit.Label(c, fmt.Sprintf("%s · %.1f MiB", file.Modified.Format("2006-01-02 15:04"), float64(file.Size)/(1<<20)), kit.Caption)
 						})
-						ui.Icon(c, kit.ChevronRight).FontSize(kit.IconPx(12)).TextColor(kit.Muted)
+						ui.Icon(c, kit.ChevronRight).FontSize(12).TextColor(kit.Muted)
 					})
 				})
 			}

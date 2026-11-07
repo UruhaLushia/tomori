@@ -157,19 +157,3 @@ func (p *Instances) contentTabs(c *ui.Context, data InstancesData, actions Insta
 func (p *Instances) overview(c *ui.Context, v minecraft.Instance, data InstancesData, actions InstancesActions) {
 	p.libraryOverview(c, v, data, actions)
 }
-
-func worldSummary(file instancecontent.File, world instancecontent.World) (string, string) {
-	name := file.Name
-	if world.Name != "" {
-		name = world.Name
-	}
-	parts := []string{}
-	if world.Version != "" {
-		parts = append(parts, world.Version)
-	}
-	if world.Valid {
-		parts = append(parts, worldMode(world))
-	}
-	parts = append(parts, file.Modified.Format("2006-01-02"))
-	return name, kit.MetaLine(parts...)
-}

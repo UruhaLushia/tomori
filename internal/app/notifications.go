@@ -85,8 +85,7 @@ func operationCanceled(err error) bool {
 func failureReason(err error) string {
 	var connection net.Error
 	var exit *exec.ExitError
-	var command *launcher.CommandError
-	if errors.As(err, &command) {
+	if command, ok := errors.AsType[*launcher.CommandError](err); ok {
 		if errors.Is(command.Err, context.DeadlineExceeded) {
 			return locales.CommandTimedOut()
 		}

@@ -35,7 +35,7 @@ func mediaImage(c *ui.Context, file instancecontent.File, data InstancesData, ac
 				if world {
 					icon = kit.Cube
 				}
-				ui.Icon(c, icon).FontSize(kit.IconPx(20)).TextColor(kit.AccentText)
+				ui.Icon(c, icon).FontSize(20).TextColor(kit.AccentText)
 			})
 		}
 	})

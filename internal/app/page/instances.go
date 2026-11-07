@@ -111,7 +111,6 @@ type Instances struct {
 	filterCount        int
 	filtered           []minecraft.Instance
 	revealKey          string
-	overviewGrid       ui.Handle
 }
 
 func (p *Instances) Selected(installed []minecraft.Instance) (minecraft.Instance, bool) {

@@ -29,7 +29,7 @@ type Account struct {
 	XUID         string    `json:"xuid,omitempty"`
 	AccessToken  string    `json:"accessToken,omitempty"`
 	RefreshToken string    `json:"refreshToken,omitempty"`
-	ExpiresAt    time.Time `json:"expiresAt,omitempty"`
+	ExpiresAt    time.Time `json:"expiresAt"`
 	ServerURL    string    `json:"serverUrl,omitempty"`
 	ServerName   string    `json:"serverName,omitempty"`
 	LoginName    string    `json:"loginName,omitempty"`

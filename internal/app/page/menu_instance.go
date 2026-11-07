@@ -8,10 +8,6 @@ import (
 	"github.com/UruhaLushia/tomori/locales"
 )
 
-func (p *Instances) instanceMenu(c *ui.Context, v minecraft.Instance, data InstancesData, actions InstancesActions) {
-	p.instanceMenuTrigger(c, v, data, actions, false)
-}
-
 func (p *Instances) instanceIconMenu(c *ui.Context, v minecraft.Instance, data InstancesData, actions InstancesActions) {
 	p.instanceMenuTrigger(c, v, data, actions, true)
 }

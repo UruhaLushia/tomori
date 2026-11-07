@@ -49,7 +49,7 @@ func (p *Instances) viewSwitcher(c *ui.Context, data InstancesData, actions Inst
 				background = kit.Hover
 			}
 			kit.ControlMotion(segment).Background(segment.AnimateColor("bg", background, kit.MotionFast)).Children(func() {
-				ui.Icon(c, item.icon).FontSize(kit.IconPx(16)).TextColor(color)
+				ui.Icon(c, item.icon).FontSize(16).TextColor(color)
 			})
 		}
 	})

@@ -4,12 +4,12 @@ import (
 	"bytes"
 	"image/png"
 
-	"github.com/egoist/mygo"
-	"github.com/egoist/mygo/ui"
 	"github.com/UruhaLushia/tomori/internal/app/page"
 	"github.com/UruhaLushia/tomori/internal/config"
 	"github.com/UruhaLushia/tomori/internal/kit"
 	"github.com/UruhaLushia/tomori/locales"
+	"github.com/egoist/mygo"
+	"github.com/egoist/mygo/ui"
 )
 
 func (a *app) closeViews() {
@@ -144,7 +144,7 @@ func (a *app) ensureTray() {
 		return
 	}
 	icon := ui.Render(func(c *ui.Context) {
-		ui.Box(c).Fill().Center().Children(func() { ui.Icon(c, kit.Cube).FontSize(kit.IconPx(20)).TextColor(kit.AccentText) })
+		ui.Box(c).Fill().Center().Children(func() { ui.Icon(c, kit.Cube).FontSize(20).TextColor(kit.AccentText) })
 	}, 32, 32, 1)
 	var data bytes.Buffer
 	if err := png.Encode(&data, icon); err != nil {

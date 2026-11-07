@@ -201,14 +201,14 @@ func extractJavaZip(ctx context.Context, archivePath, destination string) error 
 		if err := ctx.Err(); err != nil {
 			return err
 		}
-		if err := extractJavaZipEntry(ctx, entry, destination, &total); err != nil {
+		if err := extractJavaZipEntry(entry, destination, &total); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-func extractJavaZipEntry(ctx context.Context, entry *zip.File, destination string, total *int64) error {
+func extractJavaZipEntry(entry *zip.File, destination string, total *int64) error {
 	name := strings.TrimSuffix(strings.ReplaceAll(entry.Name, "\\", "/"), "/")
 	if name == "" {
 		return nil
@@ -297,7 +297,7 @@ func extractJavaTarGz(ctx context.Context, archiveFile, destination string) erro
 			if err := extractJavaSymlink(destination, name, header.Linkname); err != nil {
 				return err
 			}
-		case tar.TypeReg, tar.TypeRegA:
+		case tar.TypeReg:
 			if header.Size < 0 || header.Size > 512<<20 || total > 8<<30-header.Size {
 				return errors.New(locales.ArchiveExtractionSizeOrFileCountExceedsLimit())
 			}

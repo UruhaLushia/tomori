@@ -420,7 +420,7 @@ func (p *Resources) libraryToolbar(c *ui.Context, data *ResourcesData, actions R
 		if trigger.Hovered() {
 			trigger.Background(kit.Hover)
 		}
-		trigger.Children(func() { ui.Icon(c, kit.More).FontSize(kit.IconPx(16)).TextColor(kit.Muted) })
+		trigger.Children(func() { ui.Icon(c, kit.More).FontSize(16).TextColor(kit.Muted) })
 		trigger.OnChange(func() {
 			action := p.toolbarAction
 			p.toolbarAction = ""

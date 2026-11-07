@@ -49,7 +49,7 @@ type AssetIndex struct {
 type Downloads struct {
 	Client         FileRef `json:"client"`
 	Server         FileRef `json:"server"`
-	ClientMappings FileRef `json:"client_mappings,omitempty"`
+	ClientMappings FileRef `json:"client_mappings"`
 }
 
 type FileRef struct {

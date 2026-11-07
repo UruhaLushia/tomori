@@ -124,8 +124,8 @@ func (a *app) playHistory(now time.Time) *playHistorySummary {
 		}
 	}
 	seen := make(map[string]struct{}, 8)
-	for i := len(a.cfg.PlayHistory) - 1; i >= 0; i-- {
-		record := a.cfg.PlayHistory[i]
+	for _, record := range slices.Backward(a.cfg.PlayHistory) {
+
 		id := record.Instance + ":" + record.Server
 		if record.Server == "" {
 			continue

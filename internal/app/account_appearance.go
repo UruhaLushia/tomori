@@ -184,16 +184,12 @@ func (a *app) refreshAppearance() {
 			var wg sync.WaitGroup
 			var skinErr, capeErr error
 			if skinURL != "" {
-				wg.Add(1)
-				go func() {
-					defer wg.Done()
+				wg.Go(func() {
 					raw, skinErr = client.TextureCached(ctx, a.cfg.CacheDirectory(), skinURL)
-				}()
+				})
 			}
 			if capeURL != "" {
-				wg.Add(1)
-				go func() {
-					defer wg.Done()
+				wg.Go(func() {
 					var texture []byte
 					texture, capeErr = client.TextureCached(ctx, a.cfg.CacheDirectory(), capeURL)
 					if capeErr == nil {
@@ -202,7 +198,7 @@ func (a *app) refreshAppearance() {
 							capeRaw = texture
 						}
 					}
-				}()
+				})
 			}
 			wg.Wait()
 			if skinErr != nil {

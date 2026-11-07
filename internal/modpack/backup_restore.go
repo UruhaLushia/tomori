@@ -394,7 +394,7 @@ func (p *RestorePlan) Apply(ctx context.Context, progress func(int, int)) (backu
 		}
 	}
 	for _, set := range []*updateSet{t.updateSet, t.control} {
-		for i := len(set.files) - 1; i >= 0; i-- {
+		for i := range slices.Backward(set.files) {
 			if err := set.step(ctx, func() error { return set.applyFile(ctx, i) }); err != nil {
 				return "", err
 			}

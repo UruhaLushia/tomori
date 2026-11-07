@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"slices"
 	"strings"
 	"sync"
 
@@ -154,8 +155,8 @@ func (b *Budget) lock(ctx context.Context, scope, path, identity string) (func()
 		suffix = append(suffix, filepath.Base(path))
 		path = parent
 	}
-	for i := len(suffix) - 1; i >= 0; i-- {
-		path = filepath.Join(path, suffix[i])
+	for _, s := range slices.Backward(suffix) {
+		path = filepath.Join(path, s)
 	}
 	if runtime.GOOS == "windows" {
 		path = strings.ToLower(path)

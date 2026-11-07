@@ -291,8 +291,7 @@ func (a *app) preparePackUpdate() {
 				a.packUpdateSpace.close()
 				if err != nil && !operationCanceled(err) {
 					s.data.Error = err.Error()
-					var missing *modpack.MissingFilesError
-					if errors.As(err, &missing) {
+					if missing, ok := errors.AsType[*modpack.MissingFilesError](err); ok {
 						s.data.Missing = missing.Files
 					}
 				}

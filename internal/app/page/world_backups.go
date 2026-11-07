@@ -4,11 +4,11 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/egoist/mygo/ui"
 	"github.com/UruhaLushia/tomori/internal/kit"
 	"github.com/UruhaLushia/tomori/internal/launcher"
 	"github.com/UruhaLushia/tomori/internal/storage"
 	"github.com/UruhaLushia/tomori/locales"
+	"github.com/egoist/mygo/ui"
 )
 
 type WorldBackupsData struct {
@@ -137,7 +137,7 @@ func (p *WorldBackups) View(c *ui.Context, data *WorldBackupsData, actions World
 							kit.Label(c, item.Name, kit.Body).MaxLines(1).Ellipsis("…")
 							kit.Label(c, item.Modified.Local().Format("2006-01-02 15:04")+" · "+storage.Size(uint64(max(0, item.Size))), kit.Body).TextColor(kit.Muted).SingleLine()
 						})
-						ui.Icon(c, kit.ChevronRight).FontSize(kit.IconPx(12)).TextColor(kit.Muted).Shrink(0)
+						ui.Icon(c, kit.ChevronRight).FontSize(12).TextColor(kit.Muted).Shrink(0)
 					})
 					kit.ContextMenu(c, button, func(menu *kit.ContextActions) {
 						menu.Item(c, "restore", locales.Restore2(), false, func() { actions.Choose(item) })

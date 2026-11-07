@@ -153,7 +153,7 @@ func (p *DirectoryPicker) breadcrumbs(c *ui.Context, data *DirectoryPickerData, 
 			}
 			for i, part := range parts {
 				if i > 0 {
-					ui.Icon(c, kit.ChevronRight).FontSize(kit.IconPx(12)).TextColor(kit.Muted)
+					ui.Icon(c, kit.ChevronRight).FontSize(12).TextColor(kit.Muted)
 				}
 				c.Key(part.Path)
 				item := kit.Ghost(c, part.Name, func() { actions.Navigate(part.Path) }).Height(kit.TabH()).Padding(0, 8).Shrink(0).Disabled(data.Saving)
@@ -189,7 +189,7 @@ func (p *DirectoryPicker) browser(c *ui.Context, data *DirectoryPickerData, acti
 						if active {
 							color = kit.Accent
 						}
-						ui.Icon(c, icon).FontSize(kit.IconPx(16)).TextColor(color)
+						ui.Icon(c, icon).FontSize(16).TextColor(color)
 						kit.Label(c, location.Name, kit.Body).Grow(1).MinWidth(0).MaxLines(1).Ellipsis("…")
 					})
 				}
@@ -219,7 +219,7 @@ func (p *DirectoryPicker) browser(c *ui.Context, data *DirectoryPickerData, acti
 					label = locales.NoMatchingFolders()
 				}
 				ui.Column(c).Grow(1).FillWidth().Gap(8).Center().Children(func() {
-					ui.Icon(c, kit.Folder).FontSize(kit.IconPx(20)).TextColor(kit.Faint)
+					ui.Icon(c, kit.Folder).FontSize(20).TextColor(kit.Faint)
 					kit.Label(c, label, kit.Body).TextColor(kit.Muted)
 				})
 				return
@@ -261,9 +261,9 @@ func (p *DirectoryPicker) browser(c *ui.Context, data *DirectoryPickerData, acti
 				entry := data.Directories[p.visible[row.Index]]
 				ui.Row(c).FillWidth().Height(kit.ControlH()).Padding(0, 12).Gap(12).Radius(kit.RadiusS).AlignItems(ui.Center).Children(func() {
 					if entry.Directory || !data.Files {
-						ui.Icon(c, kit.Folder).FontSize(kit.IconPx(16)).TextColor(kit.AccentText)
+						ui.Icon(c, kit.Folder).FontSize(16).TextColor(kit.AccentText)
 					} else {
-						ui.Icon(c, kit.Cube).FontSize(kit.IconPx(16)).TextColor(kit.Muted)
+						ui.Icon(c, kit.Cube).FontSize(16).TextColor(kit.Muted)
 					}
 					kit.Label(c, entry.Name, kit.Body).Grow(1).MinWidth(0).MaxLines(1).Ellipsis("…")
 				})

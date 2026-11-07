@@ -3,10 +3,10 @@ package page
 import (
 	"fmt"
 
-	"github.com/egoist/mygo/ui"
 	"github.com/UruhaLushia/tomori/internal/kit"
 	"github.com/UruhaLushia/tomori/internal/modpack"
 	"github.com/UruhaLushia/tomori/locales"
+	"github.com/egoist/mygo/ui"
 )
 
 type PackRestoreData struct {
@@ -90,7 +90,7 @@ func (p *PackRestore) View(c *ui.Context, data *PackRestoreData, actions PackRes
 							}
 							kit.Label(c, label, kit.Body).TextColor(kit.Muted).MaxLines(2).Wrap()
 						})
-						ui.Icon(c, kit.ChevronRight).FontSize(kit.IconPx(16)).TextColor(kit.Muted).Shrink(0)
+						ui.Icon(c, kit.ChevronRight).FontSize(16).TextColor(kit.Muted).Shrink(0)
 					})
 				})
 			}
