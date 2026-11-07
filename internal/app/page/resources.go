@@ -388,7 +388,7 @@ func (p *Resources) localToolbar(c *ui.Context, data *ResourcesData, actions Res
 					}
 				})
 				menu.Popup(func(panel ui.Element) {
-					kit.PopupPanel(c, panel, 144).Role(ui.RoleMenu)
+					kit.PopupPanel(c, panel, 144, menu.Trigger).Role(ui.RoleMenu)
 					kit.MenuItem(c, menu.Item("file"), locales.Archive())
 					kit.MenuItem(c, menu.Item("directory"), locales.Folder())
 				})
@@ -440,7 +440,7 @@ func (p *Resources) libraryToolbar(c *ui.Context, data *ResourcesData, actions R
 			}
 		})
 		menu.Popup(func(panel ui.Element) {
-			kit.PopupPanel(c, panel, 144)
+			kit.PopupPanel(c, panel, 144, menu.Trigger)
 			kit.MenuItem(c, menu.Item("import").Disabled(data.Busy), locales.Import())
 			kit.MenuItem(c, menu.Item("open"), locales.OpenFolder())
 			kit.MenuItem(c, menu.Item("refresh").Disabled(data.Loading), locales.Refresh())

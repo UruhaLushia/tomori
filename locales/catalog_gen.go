@@ -4156,6 +4156,76 @@ func (msgs Messages) AutoDownload() string {
 	return Catalog.Format(msgs.locale, "auto_download", nil)
 }
 
+// DownloadJava says "下载 Java"
+// in the language the app shows.
+func DownloadJava() string { return In(i18n.Locale()).DownloadJava() }
+
+// DownloadJava says "下载 Java"
+// in the language of msgs.
+func (msgs Messages) DownloadJava() string {
+	return Catalog.Format(msgs.locale, "download_java", nil)
+}
+
+// JavaRuntimeIsNotManaged says "该 Java 运行时不是应用下载的，无法删除"
+// in the language the app shows.
+func JavaRuntimeIsNotManaged() string { return In(i18n.Locale()).JavaRuntimeIsNotManaged() }
+
+// JavaRuntimeIsNotManaged says "该 Java 运行时不是应用下载的，无法删除"
+// in the language of msgs.
+func (msgs Messages) JavaRuntimeIsNotManaged() string {
+	return Catalog.Format(msgs.locale, "java_runtime_is_not_managed", nil)
+}
+
+// ConfirmDeleteJavaRuntime says "确定删除已下载的 Java 运行时 %s？"
+// in the language the app shows.
+func ConfirmDeleteJavaRuntime() string { return In(i18n.Locale()).ConfirmDeleteJavaRuntime() }
+
+// ConfirmDeleteJavaRuntime says "确定删除已下载的 Java 运行时 %s？"
+// in the language of msgs.
+func (msgs Messages) ConfirmDeleteJavaRuntime() string {
+	return Catalog.Format(msgs.locale, "confirm_delete_java_runtime", nil)
+}
+
+// ManualDownloadJava says "手动下载 Java"
+// in the language the app shows.
+func ManualDownloadJava() string { return In(i18n.Locale()).ManualDownloadJava() }
+
+// ManualDownloadJava says "手动下载 Java"
+// in the language of msgs.
+func (msgs Messages) ManualDownloadJava() string {
+	return Catalog.Format(msgs.locale, "manual_download_java", nil)
+}
+
+// JavaDistribution says "Java 发行版"
+// in the language the app shows.
+func JavaDistribution() string { return In(i18n.Locale()).JavaDistribution() }
+
+// JavaDistribution says "Java 发行版"
+// in the language of msgs.
+func (msgs Messages) JavaDistribution() string {
+	return Catalog.Format(msgs.locale, "java_distribution", nil)
+}
+
+// JavaPackageType says "Java 包类型"
+// in the language the app shows.
+func JavaPackageType() string { return In(i18n.Locale()).JavaPackageType() }
+
+// JavaPackageType says "Java 包类型"
+// in the language of msgs.
+func (msgs Messages) JavaPackageType() string {
+	return Catalog.Format(msgs.locale, "java_package_type", nil)
+}
+
+// JavaVersion says "Java 版本"
+// in the language the app shows.
+func JavaVersion() string { return In(i18n.Locale()).JavaVersion() }
+
+// JavaVersion says "Java 版本"
+// in the language of msgs.
+func (msgs Messages) JavaVersion() string {
+	return Catalog.Format(msgs.locale, "java_version", nil)
+}
+
 // AutomaticallyDownloadJava says "自动下载 Java"
 // in the language the app shows.
 func AutomaticallyDownloadJava() string { return In(i18n.Locale()).AutomaticallyDownloadJava() }

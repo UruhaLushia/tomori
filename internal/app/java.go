@@ -2,6 +2,7 @@ package app
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"path/filepath"
 	"slices"
@@ -112,5 +113,81 @@ func (a *app) rescanJava() {
 			a.java, a.javaLoading = list, false
 			a.drainLaunchRequests()
 		})
+	})
+}
+
+func (a *app) downloadJava(request java.DownloadRequest) {
+	if request.Distribution == "" {
+		request.Distribution = java.DistributionMojang
+	}
+	if request.PackageType == "" {
+		request.PackageType = java.PackageJRE
+	}
+	distribution, validDistribution := java.DistributionInfoFor(request.Distribution)
+	valid := validDistribution && slices.Contains(java.SupportedMajors(), request.Major) && request.PackageType == java.PackageJDK
+	if validDistribution && distribution.HasJRE {
+		valid = valid || request.PackageType == java.PackageJRE
+	}
+	if !valid || a.pathBusy || a.javaDownloading || a.tasksFull() {
+		return
+	}
+	a.javaDownloadRequest = request
+	a.javaDownloadOpen = false
+	distributionName, packageType := distribution.Label, "JRE"
+	if request.PackageType == java.PackageJDK {
+		packageType = "JDK"
+	}
+	title := fmt.Sprintf("%s %s %s %d", locales.DownloadJava(), distributionName, packageType, request.Major)
+	key := fmt.Sprintf("java:%s:%s:%d", request.Distribution, request.PackageType, request.Major)
+	ctx, service, token := a.beginOperation(title, key, a.store.RuntimeDir())
+	if token == 0 {
+		return
+	}
+	a.javaDownloading = true
+	progress := a.progressHandler(token)
+	a.workers.Go(func() {
+		defer service.Close()
+		_, err := service.DownloadJava(ctx, request, progress)
+		a.win.Update(func() {
+			a.javaDownloading = false
+			if err == nil && a.ctx.Err() == nil {
+				a.rescanJava()
+			}
+		})
+		a.finishOperation(token, err)
+	})
+}
+
+func (a *app) deleteJava(runtime java.Runtime) {
+	if a.pathBusy || a.javaDownloading || a.hasTasks() || a.preparingGames() {
+		return
+	}
+	dir := a.store.RuntimeDir()
+	if java.ManagedRoot(dir, runtime.Path) == "" {
+		return
+	}
+	ctx, service, token := a.beginOperation(fmt.Sprintf("%s %s", locales.Delete(), runtime.Label()), "java-delete:"+runtime.Path, dir)
+	if token == 0 {
+		return
+	}
+	a.operations[token].silent = true
+	a.workers.Go(func() {
+		defer service.Close()
+		err := java.RemoveManaged(ctx, dir, runtime.Path)
+		a.win.Update(func() {
+			if err == nil {
+				if a.cfg.Java.Path == runtime.Path {
+					a.cfg.Java.Path, a.cfg.Java.Mode = "", "auto"
+				}
+				for major, path := range a.cfg.Java.Versions {
+					if path == runtime.Path {
+						delete(a.cfg.Java.Versions, major)
+					}
+				}
+				a.saveConfig()
+				a.rescanJava()
+			}
+		})
+		a.finishOperation(token, err)
 	})
 }

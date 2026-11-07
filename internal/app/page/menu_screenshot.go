@@ -3,10 +3,10 @@ package page
 import (
 	"path/filepath"
 
-	"github.com/egoist/mygo/ui"
 	"github.com/UruhaLushia/tomori/internal/instancecontent"
 	"github.com/UruhaLushia/tomori/internal/kit"
 	"github.com/UruhaLushia/tomori/locales"
+	"github.com/egoist/mygo/ui"
 )
 
 type screenshotOption struct {
@@ -57,7 +57,7 @@ func screenshotMenu(c *ui.Context, file instancecontent.File, locked bool, actio
 			screenshotAction(file, mode, actions, services.WriteClipboard)
 		})
 		menu.Popup(func(panel ui.Element) {
-			kit.PopupPanel(c, panel, 168).Role(ui.RoleMenu)
+			kit.PopupPanel(c, panel, 168, menu.Trigger).Role(ui.RoleMenu)
 			for _, option := range screenshotOptions(locked) {
 				if option.id == "delete" {
 					kit.Divider(c)

@@ -2,10 +2,10 @@ package kit
 
 import (
 	"fmt"
+	"github.com/UruhaLushia/tomori/locales"
 	"github.com/egoist/mygo/ui"
 	"math"
 	"time"
-	"github.com/UruhaLushia/tomori/locales"
 )
 
 func TaskIndicator(c *ui.Context, fraction float64, active, failure bool, onClick func()) ui.Element {
@@ -104,7 +104,12 @@ func ListRow(c *ui.Context, data Row, trailing func(bool)) ui.Element {
 	if data.Subtitle == "" {
 		height = RowSingleH()
 	}
-	el := RowButton(c, data.Title, data.Selected, data.OnClick).Height(height).Padding(0, 8).Gap(12).Radius(RadiusM)
+	var el ui.Element
+	if data.OnClick != nil {
+		el = RowButton(c, data.Title, data.Selected, data.OnClick).Height(height).Padding(0, 8).Gap(12).Radius(RadiusM)
+	} else {
+		el = ui.Row(c).FillWidth().Height(height).Padding(0, 8).Gap(12).Radius(RadiusM).AlignItems(ui.Center).Justify(ui.Start)
+	}
 	return el.Children(func() {
 		if data.Lead != nil {
 			data.Lead()

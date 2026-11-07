@@ -49,7 +49,7 @@ func (p *Instances) worldImportMenu(c *ui.Context, data InstancesData, actions I
 			actions.WorldArchive(mode, instancecontent.File{})
 		})
 		menu.Popup(func(panel ui.Element) {
-			kit.PopupPanel(c, panel, 168).Role(ui.RoleMenu)
+			kit.PopupPanel(c, panel, 168, menu.Trigger).Role(ui.RoleMenu)
 			for _, item := range []struct{ mode, label string }{{"file", locales.Archive()}, {"directory", locales.Folder()}, {"backups", locales.RestoreFromBackup()}} {
 				c.Key(item.mode)
 				kit.MenuItem(c, menu.Item(item.mode), item.label)
@@ -73,7 +73,7 @@ func (p *Instances) worldMenu(c *ui.Context, file instancecontent.File, world in
 			}
 		})
 		menu.Popup(func(panel ui.Element) {
-			kit.PopupPanel(c, panel, 168).Role(ui.RoleMenu)
+			kit.PopupPanel(c, panel, 168, menu.Trigger).Role(ui.RoleMenu)
 			c.Key("open")
 			kit.MenuItem(c, menu.Item("open"), locales.OpenFolder())
 			kit.Divider(c)

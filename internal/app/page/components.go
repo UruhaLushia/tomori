@@ -116,7 +116,7 @@ func (p *Components) gameInput(c *ui.Context, data *ComponentsData, actions Comp
 			ui.Icon(c, kit.ChevronRight).FontSize(kit.IconPx(12)).Rotate(90).TextColor(kit.Muted)
 		})
 		input.Popup(func(panel ui.Element) {
-			kit.PopupPanel(c, panel, 320)
+			kit.PopupPanel(c, panel, 320, input.Trigger)
 			kit.SearchInput(c, &p.gameFilter.query, locales.SearchVersions())
 			p.gameFilter.filterVersions(data.Versions)
 			if len(data.Versions) == 0 {

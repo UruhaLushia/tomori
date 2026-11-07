@@ -1,16 +1,18 @@
 package app
 
 import (
+	"time"
+
 	"github.com/egoist/mygo"
 	"github.com/egoist/mygo/ui"
-	"time"
-	"github.com/UruhaLushia/tomori/internal/minecraft"
 
 	"github.com/UruhaLushia/tomori/internal/account"
 	"github.com/UruhaLushia/tomori/internal/app/page"
 	"github.com/UruhaLushia/tomori/internal/config"
+	"github.com/UruhaLushia/tomori/internal/java"
 	"github.com/UruhaLushia/tomori/internal/kit"
 	"github.com/UruhaLushia/tomori/internal/launchrequest"
+	"github.com/UruhaLushia/tomori/internal/minecraft"
 	"github.com/UruhaLushia/tomori/internal/resource"
 	"github.com/UruhaLushia/tomori/internal/resourcecatalog"
 	"github.com/UruhaLushia/tomori/locales"
@@ -293,11 +295,17 @@ func (a *app) gamePage(c *ui.Context) {
 
 func (a *app) javaPage(c *ui.Context) {
 	page.Java(c, a.cfg, page.JavaData{
-		Java:        a.java,
-		JavaLoading: a.javaLoading,
-		RescanJava:  a.rescanJava,
-		BrowseJava:  func() { a.browseJava(false) },
-		AddJava:     a.addJava,
+		Java:             a.java,
+		JavaLoading:      a.javaLoading,
+		JavaDownloading:  a.javaDownloading,
+		JavaDownloadOpen: &a.javaDownloadOpen,
+		DownloadRequest:  &a.javaDownloadRequest,
+		RescanJava:       a.rescanJava,
+		BrowseJava:       func() { a.browseJava(false) },
+		AddJava:          a.addJava,
+		CanDeleteJava:    func(runtime java.Runtime) bool { return java.ManagedRoot(a.store.RuntimeDir(), runtime.Path) != "" },
+		DeleteJava:       a.deleteJava,
+		DownloadJava:     a.downloadJava,
 	}, a.saveConfig)
 }
 

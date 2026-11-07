@@ -64,7 +64,7 @@ func (p *DownloadTasks) View(c *ui.Context, trigger ui.Element, open *bool, jobs
 	ui.PopoverBase(c, trigger, open, func(panel ui.Element) {
 		w, h := c.Size()
 		anchor := trigger.Bounds()
-		kit.PopupPanel(c, panel, kit.W(320)).MinWidth(0).MaxWidth(max(0, w-16)).
+		kit.PopupPanel(c, panel, kit.W(320), trigger).MinWidth(0).MaxWidth(max(0, w-16)).
 			MaxHeight(max(0, min(360, h-anchor.Y-anchor.H-12))).
 			AttachTo(trigger, ui.AnchorBottomEnd, ui.AnchorTopEnd).Label(locales.Downloads4())
 		panel.Children(func() {

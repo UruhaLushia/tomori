@@ -102,7 +102,7 @@ func Open() (*Store, error) {
 func (s *Store) Format() Format     { return Format(s.format.Load()) }
 func (s *Store) Path() string       { return filepath.Join(s.dir, s.Format().filename()) }
 func (s *Store) Dir() string        { return s.dir }
-func (s *Store) RuntimeDir() string { return filepath.Join(s.dir, "runtime") }
+func (s *Store) RuntimeDir() string { return filepath.Join(DataDir(), "runtime") }
 func (s *Store) LogDir() string     { return filepath.Join(s.dir, "logs") }
 
 func (s *Store) LogStore() (*logstore.Store, error) {

@@ -31,7 +31,7 @@ func (p *Accounts) addMenu(c *ui.Context, data AccountData, actions AccountActio
 			}
 		})
 	menu.Popup(func(panel ui.Element) {
-		kit.PopupPanel(c, panel, 168).Role(ui.RoleMenu)
+		kit.PopupPanel(c, panel, 168, menu.Trigger).Role(ui.RoleMenu)
 		for _, option := range []struct{ value, label string }{{"microsoft", locales.MicrosoftAccount()}, {"offline", locales.OfflineAccount()}, {"yggdrasil", locales.ExternalLogin()}} {
 			c.Key(option.value)
 			kit.MenuItem(c, menu.Item(option.value).Disabled(data.Locked || data.Busy), option.label)

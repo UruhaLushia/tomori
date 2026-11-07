@@ -32,7 +32,7 @@ func (p *Instances) installMenu(c *ui.Context, busy bool, newInstall, importPack
 		}
 	})
 	menu.Popup(func(panel ui.Element) {
-		kit.PopupPanel(c, panel, 168).Role(ui.RoleMenu)
+		kit.PopupPanel(c, panel, 168, menu.Trigger).Role(ui.RoleMenu)
 		for _, option := range []struct{ value, label string }{{"new", locales.NewInstance()}, {"import", locales.ImportModpack()}, {"browse", locales.BrowseOnlineModpacks()}} {
 			c.Key(option.value)
 			kit.MenuItem(c, menu.Item(option.value).Disabled(busy), option.label)

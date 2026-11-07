@@ -139,16 +139,19 @@ type app struct {
 
 	openSection int
 
-	installed      map[string]bool
-	installedList  []minecraft.Instance
-	java           []java.Runtime
-	javaLoading    bool
-	instancesReady bool
-	launchRequests []launchrequest.Request
-	fonts          []string
-	fontsLoading   bool
-	memory         systeminfo.Memory
-	memoryError    string
+	installed           map[string]bool
+	installedList       []minecraft.Instance
+	java                []java.Runtime
+	javaLoading         bool
+	javaDownloading     bool
+	javaDownloadOpen    bool
+	javaDownloadRequest java.DownloadRequest
+	instancesReady      bool
+	launchRequests      []launchrequest.Request
+	fonts               []string
+	fontsLoading        bool
+	memory              systeminfo.Memory
+	memoryError         string
 
 	logs     []page.LogLine
 	logStart int

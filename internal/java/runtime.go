@@ -20,6 +20,73 @@ import (
 
 const runtimeManifestURL = "https://launchermeta.mojang.com/v1/products/java-runtime/2ec0cc96c44e5a76b9c8b7c39df7210883d12871/all.json"
 
+type Distribution string
+
+const (
+	DistributionMojang           Distribution = "mojang"
+	DistributionTemurin          Distribution = "temurin"
+	DistributionZulu             Distribution = "zulu"
+	DistributionLiberica         Distribution = "liberica"
+	DistributionCorretto         Distribution = "corretto"
+	DistributionMicrosoft        Distribution = "microsoft"
+	DistributionSapMachine       Distribution = "sap_machine"
+	DistributionSemeru           Distribution = "semeru"
+	DistributionOpenLogic        Distribution = "openlogic"
+	DistributionOracleOpenJDK    Distribution = "oracle_open_jdk"
+	DistributionGraalVMCommunity Distribution = "graalvm_community"
+	DistributionDragonwell       Distribution = "dragonwell"
+	DistributionKona             Distribution = "kona"
+	DistributionJetBrains        Distribution = "jetbrains"
+)
+
+type PackageType string
+
+const (
+	PackageJRE PackageType = "jre"
+	PackageJDK PackageType = "jdk"
+)
+
+type DownloadRequest struct {
+	Distribution Distribution
+	PackageType  PackageType
+	Major        int
+	Component    string
+}
+
+type DistributionInfo struct {
+	Value  Distribution
+	Label  string
+	HasJRE bool
+}
+
+func SupportedDistributions() []DistributionInfo {
+	return []DistributionInfo{
+		{Value: DistributionMojang, Label: "Mojang", HasJRE: true},
+		{Value: DistributionTemurin, Label: "Temurin", HasJRE: true},
+		{Value: DistributionZulu, Label: "Zulu", HasJRE: true},
+		{Value: DistributionLiberica, Label: "Liberica", HasJRE: true},
+		{Value: DistributionCorretto, Label: "Corretto"},
+		{Value: DistributionMicrosoft, Label: "Microsoft"},
+		{Value: DistributionSapMachine, Label: "SapMachine", HasJRE: true},
+		{Value: DistributionSemeru, Label: "Semeru", HasJRE: true},
+		{Value: DistributionOpenLogic, Label: "OpenLogic", HasJRE: true},
+		{Value: DistributionOracleOpenJDK, Label: "Oracle OpenJDK"},
+		{Value: DistributionGraalVMCommunity, Label: "GraalVM Community"},
+		{Value: DistributionDragonwell, Label: "Dragonwell"},
+		{Value: DistributionKona, Label: "Kona"},
+		{Value: DistributionJetBrains, Label: "JetBrains"},
+	}
+}
+
+func DistributionInfoFor(value Distribution) (DistributionInfo, bool) {
+	for _, info := range SupportedDistributions() {
+		if info.Value == value {
+			return info, true
+		}
+	}
+	return DistributionInfo{}, false
+}
+
 func Managed(ctx context.Context, dir string) []Runtime {
 	markers, _ := filepath.Glob(filepath.Join(dir, "*", "*", ".complete"))
 	var list []Runtime
@@ -41,6 +108,38 @@ func Managed(ctx context.Context, dir string) []Runtime {
 	return list
 }
 
+func ManagedRoot(dir, executable string) string {
+	executable = filepath.Clean(executable)
+	markers, _ := filepath.Glob(filepath.Join(dir, "*", "*", ".complete"))
+	for _, marker := range markers {
+		root := filepath.Dir(marker)
+		if filepath.Base(root) != javaPlatform() {
+			continue
+		}
+		for _, path := range []string{filepath.Join(root, "bin", javaBinary()), filepath.Join(root, "jre.bundle", "Contents", "Home", "bin", javaBinary())} {
+			if filepath.Clean(path) == executable {
+				return filepath.Dir(root)
+			}
+		}
+	}
+	return ""
+}
+
+func RemoveManaged(ctx context.Context, dir, executable string) error {
+	if err := ctx.Err(); err != nil {
+		return err
+	}
+	root := ManagedRoot(dir, executable)
+	if root == "" {
+		return errors.New(locales.JavaRuntimeIsNotManaged())
+	}
+	return os.RemoveAll(root)
+}
+
+func SupportedMajors() []int {
+	return []int{8, 16, 17, 21, 25}
+}
+
 func Ensure(ctx context.Context, f *download.Client, d *minecraft.VersionDetail, list []Runtime, custom, dir string, auto, ignoreCompatibility bool, progress func(minecraft.Progress)) (Runtime, error) {
 	required := d.RequiredJava()
 	compatible := d.CompatibleJavaMajors
@@ -57,11 +156,6 @@ func Ensure(ctx context.Context, f *download.Client, d *minecraft.VersionDetail,
 		}
 		return j, nil
 	}
-	release, err := f.Lock(ctx, "java", dir)
-	if err != nil {
-		return Runtime{}, err
-	}
-	defer release()
 	for _, j := range list {
 		if err := ctx.Err(); err != nil {
 			return Runtime{}, err
@@ -85,15 +179,64 @@ func Ensure(ctx context.Context, f *download.Client, d *minecraft.VersionDetail,
 	if !auto {
 		return Runtime{}, fmt.Errorf(locales.JavaNotFoundSelectItInSettingsOrEnableAutomaticDownload(), required)
 	}
-	return installRuntime(ctx, f, d, dir, progress)
-}
-
-func installRuntime(ctx context.Context, f *download.Client, d *minecraft.VersionDetail, dir string, progress func(minecraft.Progress)) (Runtime, error) {
-	required := d.RequiredJava()
 	component := ""
 	if d.JavaVersion != nil {
 		component = d.JavaVersion.Component
 	}
+	return Download(ctx, f, DownloadRequest{Distribution: DistributionMojang, PackageType: PackageJRE, Major: required, Component: component}, dir, progress)
+}
+
+func Download(ctx context.Context, f *download.Client, request DownloadRequest, dir string, progress func(minecraft.Progress)) (Runtime, error) {
+	if request.Distribution == "" {
+		request.Distribution = DistributionMojang
+	}
+	if request.PackageType == "" {
+		request.PackageType = PackageJRE
+	}
+	release, err := f.Lock(ctx, "java", dir)
+	if err != nil {
+		return Runtime{}, err
+	}
+	defer release()
+	if component := downloadComponent(request); component != "" {
+		target := filepath.Join(dir, component, javaPlatform())
+		for _, j := range Managed(ctx, dir) {
+			relative, err := filepath.Rel(target, j.Path)
+			if err == nil && j.Major == request.Major && relative != ".." && !strings.HasPrefix(relative, ".."+string(filepath.Separator)) {
+				return j, nil
+			}
+		}
+	}
+	switch request.Distribution {
+	case DistributionMojang:
+		if request.PackageType != PackageJRE {
+			return Runtime{}, fmt.Errorf(locales.AutomaticInstallationOfJavaIsNotSupported(), request.Major)
+		}
+		return downloadMojangRuntime(ctx, f, request, dir, progress)
+	default:
+		if _, ok := DistributionInfoFor(request.Distribution); !ok {
+			return Runtime{}, fmt.Errorf(locales.AutomaticInstallationOfJavaIsNotSupported(), request.Major)
+		}
+		return downloadFoojayRuntime(ctx, f, request, dir, progress)
+	}
+}
+
+func downloadComponent(request DownloadRequest) string {
+	if request.Distribution != DistributionMojang {
+		return fmt.Sprintf("%s-%s-%d", request.Distribution, request.PackageType, request.Major)
+	}
+	if request.Distribution == DistributionMojang && request.PackageType == PackageJRE {
+		if request.Component != "" {
+			return request.Component
+		}
+		return map[int]string{8: "jre-legacy", 16: "java-runtime-alpha", 17: "java-runtime-gamma", 21: "java-runtime-delta", 25: "java-runtime-epsilon"}[request.Major]
+	}
+	return ""
+}
+
+func downloadMojangRuntime(ctx context.Context, f *download.Client, request DownloadRequest, dir string, progress func(minecraft.Progress)) (Runtime, error) {
+	required := request.Major
+	component := request.Component
 	if component == "" {
 		component = map[int]string{8: "jre-legacy", 16: "java-runtime-alpha", 17: "java-runtime-gamma", 21: "java-runtime-delta", 25: "java-runtime-epsilon"}[required]
 	}

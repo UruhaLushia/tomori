@@ -78,6 +78,10 @@ func (s *Service) discoverJava(ctx context.Context) []java.Runtime {
 	return java.Discover(ctx, "", paths...)
 }
 
+func (s *Service) DownloadJava(ctx context.Context, request java.DownloadRequest, progress func(minecraft.Progress)) (java.Runtime, error) {
+	return java.Download(ctx, s.client, request, s.runtimeDir, progress)
+}
+
 func (s *Service) lockRoot(ctx context.Context, root string, progress func(minecraft.Progress)) (func(), error) {
 	if progress != nil {
 		progress(minecraft.Progress{Stage: "waiting"})

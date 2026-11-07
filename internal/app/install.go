@@ -28,6 +28,7 @@ type operation struct {
 	target                           string
 	visible                          bool
 	viewed                           bool
+	silent                           bool
 	finishedAt                       time.Time
 	job                              downloadJob
 }
@@ -79,13 +80,13 @@ func (a *app) completeOperation(token uint64, err error, keepContext bool) {
 	}
 	op.job.finish(err)
 	op.finishedAt = time.Now()
-	if err != nil {
+	if err != nil && !op.silent {
 		title := op.failureTitle
 		if title == "" {
 			title = op.job.data.Title
 		}
 		a.notifyError(title, err)
-	} else if !keepContext {
+	} else if !keepContext && !op.silent {
 		if op.resultKey != "" {
 			a.notifyInstalled(op.sourceID, op.installName, op.resultKey)
 		} else {

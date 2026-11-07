@@ -246,7 +246,7 @@ func (p *Appearance) accentPicker(c *ui.Context, cfg *config.Appearance, save fu
 		button := kit.ColorSwatch(c, color, !preset, func() { p.accentOpen = !p.accentOpen }).Label(locales.CustomAccentColor()).Expanded(p.accentOpen)
 		button.Center().Children(func() { ui.Icon(c, kit.Plus).FontSize(kit.IconPx(12)).TextColor(kit.Surface) })
 		ui.PopoverBase(c, button, &p.accentOpen, func(panel ui.Element) {
-			kit.PopupPanel(c, panel, 240).AttachTo(button, ui.AnchorBottomEnd, ui.AnchorTopEnd).Padding(12)
+			kit.PopupPanel(c, panel, 240, button).AttachTo(button, ui.AnchorBottomEnd, ui.AnchorTopEnd).Padding(12)
 			ui.ColorPicker(c, &p.accent).FillWidth().MinWidth(0).OnChange(func() { cfg.Accent = kit.HexColor(p.accent); p.accentModel = cfg.Accent; save() })
 		})
 	})
@@ -312,7 +312,7 @@ func (f *fontChoice) input(c *ui.Context, value *string, fonts []string, label s
 		shown = append(starts, contains...)
 	}
 	parts.Popup(func(panel ui.Element) {
-		kit.PopupPanel(c, panel, kit.W(200))
+		kit.PopupPanel(c, panel, kit.W(200), parts.Input)
 		panel.MaxHeight(kit.H(360))
 		ui.Scroll(c).Scrollbars(false).Fill().MinHeight(0).Background(kit.Surface).Children(func() {
 			ui.Column(c).FillWidth().Background(kit.Surface).Gap(2).Children(func() {

@@ -60,7 +60,7 @@ func (p *Accounts) externalDialog(c *ui.Context, data AccountData, actions Accou
 			}
 			kit.MenuButton(c, profile.Trigger.Disabled(locked), label, profile.Open()).FillWidth().Label(locales.ChooseProfile())
 			profile.Popup(func(panel ui.Element) {
-				kit.PopupPanel(c, panel, 280)
+				kit.PopupPanel(c, panel, 280, profile.Trigger)
 				ui.Scroll(c).Scrollbars(false).FillWidth().MaxHeight(240).Children(func() {
 					ui.Column(c).FillWidth().Children(func() {
 						for _, item := range data.ExternalProfiles {

@@ -14,11 +14,61 @@ type SelectOption[T comparable] struct {
 	Hint     string
 }
 
+type popupPanelRefs struct {
+	panel, anchor ui.Handle
+}
+
 // SelectBase uses AttachTo to flip and clamp overlays to the window.
-func PopupPanel(c *ui.Context, panel ui.Element, width float32) ui.Element {
+func PopupPanel(c *ui.Context, panel ui.Element, width float32, anchors ...ui.Element) ui.Element {
 	_, h := c.Size()
-	return PopupMotion(c, panel).Width(max(W(160), min(W(320), width))).MaxHeight(min(360, h-16)).Margin(4, 0, 0, 0).Padding(4).Radius(RadiusL).
+	panel = PopupMotion(c, panel).Width(max(W(160), min(W(320), width))).MaxHeight(min(360, h-16)).Margin(4, 0, 0, 0).Padding(4).Radius(RadiusL).
 		Background(Surface).Border(1, LineColor).Shadow(0, 8, 24, 0, Shadow)
+	refs := ui.Local(panel, "popup-panel-refs", func() popupPanelRefs { return popupPanelRefs{} })
+	panel.Bind(&refs.panel)
+	hasAnchor := len(anchors) > 0
+	if hasAnchor {
+		anchors[0].Bind(&refs.anchor)
+	}
+	paintPointer := func(p *ui.Painter, r ui.Rect, down bool) {
+		bounds := refs.panel.Bounds(c)
+		x := r.W / 2
+		if hasAnchor {
+			anchor := refs.anchor.Bounds(c)
+			x = anchor.X + anchor.W/2 - bounds.X
+			x = max(6, min(r.W-6, x))
+		}
+		var path ui.Path
+		if down {
+			path.MoveTo(r.X+x-4, r.Y).LineTo(r.X+x, r.Y+r.H).LineTo(r.X+x+4, r.Y)
+		} else {
+			path.MoveTo(r.X+x-4, r.Y+r.H).LineTo(r.X+x, r.Y).LineTo(r.X+x+4, r.Y+r.H)
+		}
+		path.Close()
+		p.FillPath(&path, Surface)
+		left, right := ui.Path{}, ui.Path{}
+		if down {
+			left.MoveTo(r.X+x-4, r.Y).LineTo(r.X+x, r.Y+r.H)
+			right.MoveTo(r.X+x, r.Y+r.H).LineTo(r.X+x+4, r.Y)
+		} else {
+			left.MoveTo(r.X+x-4, r.Y+r.H).LineTo(r.X+x, r.Y)
+			right.MoveTo(r.X+x, r.Y).LineTo(r.X+x+4, r.Y+r.H)
+		}
+		p.StrokePath(&left, 1, LineColor)
+		p.StrokePath(&right, 1, LineColor)
+	}
+	panel.Children(func() {
+		ui.Box(c).Absolute().Left(0).Right(0).Top(-5).Height(5).PassThrough().Draw(func(p *ui.Painter, r ui.Rect) {
+			if !hasAnchor || refs.panel.Bounds(c).Y >= refs.anchor.Bounds(c).Y {
+				paintPointer(p, r, false)
+			}
+		})
+		ui.Box(c).Absolute().Left(0).Right(0).Bottom(-5).Height(5).PassThrough().Draw(func(p *ui.Painter, r ui.Rect) {
+			if hasAnchor && refs.panel.Bounds(c).Y < refs.anchor.Bounds(c).Y {
+				paintPointer(p, r, true)
+			}
+		})
+	})
+	return panel
 }
 
 func MenuItem(c *ui.Context, el ui.Element, label string, tones ...Tone) ui.Element {
@@ -309,7 +359,7 @@ func placePopup(c *ui.Context, panel, anchor ui.Element, width, contentHeight fl
 	}
 	x = max(4, min(x, w-4-width))
 	desired := max(8, min(r.X, w-8-width))
-	PopupPanel(c, panel, width).MinWidth(0).MaxWidth(width).AttachTo(anchor, at, self).Left(desired - x).
+	PopupPanel(c, panel, width, anchor).MinWidth(0).MaxWidth(width).AttachTo(anchor, at, self).Left(desired - x).
 		Height(min(contentHeight, max(0, min(360, available)))).MaxHeight(max(0, min(360, available)))
 	if at == ui.AnchorTopStart {
 		panel.Margin(0, 0, 4, 0)
