@@ -628,6 +628,16 @@ func (msgs Messages) LastPlayed() string {
 	return Catalog.Format(msgs.locale, "last_played", nil)
 }
 
+// PlayTime says "游戏时长"
+// in the language the app shows.
+func PlayTime() string { return In(i18n.Locale()).PlayTime() }
+
+// PlayTime says "游戏时长"
+// in the language of msgs.
+func (msgs Messages) PlayTime() string {
+	return Catalog.Format(msgs.locale, "play_time", nil)
+}
+
 // WorldDetails says "世界信息"
 // in the language the app shows.
 func WorldDetails() string { return In(i18n.Locale()).WorldDetails() }

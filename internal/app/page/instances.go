@@ -52,6 +52,8 @@ type InstancesActions struct {
 	Install         func(string, string, modpack.Loader, string)
 	Loaders         func(string, string)
 	Repair          func(string)
+	Launch          func(string)
+	Stop            func(string)
 	Refresh         func()
 	Open            func(string)
 	OpenFile        func(string)
@@ -109,6 +111,7 @@ type Instances struct {
 	filterCount        int
 	filtered           []minecraft.Instance
 	revealKey          string
+	overviewGrid       ui.Handle
 }
 
 func (p *Instances) Selected(installed []minecraft.Instance) (minecraft.Instance, bool) {
@@ -338,6 +341,7 @@ func (p *Instances) instanceList(c *ui.Context, installed []minecraft.Instance, 
 	geometry := p.reorder.geometry(c, kit.CellH())
 	oldSlots := append([]instanceSlot(nil), p.reorder.slots...)
 	p.reorder.slots = p.reorder.slots[:0]
+	p.reorder.passthrough = p.reorder.passthrough[:0]
 	var insertionTarget ui.Element
 	c.Key("instance-grid")
 	grid := ui.List(c, &p.libraryRows, rows).Grow(1).FillWidth().MinHeight(0).Bind(&p.grid.Handle).ItemKey(func(i int) any {
@@ -362,13 +366,21 @@ func (p *Instances) instanceList(c *ui.Context, installed []minecraft.Instance, 
 				ui.Box(c).Grow(1).Basis(0).MinWidth(0).Height(height).Children(func() {
 					var slot ui.Element
 					if p.inline {
-						slot = kit.RowButton(c, v.Name, v.Key() == p.selected, func() { p.Open(v.Key()) }).Fill().MinWidth(0).Padding(0, 8).Gap(12).Radius(kit.RadiusM).Children(func() { p.libraryListBody(c, v, data) })
+						row := kit.RowButton(c, v.Name, v.Key() == p.selected, func() { p.Open(v.Key()) }).Fill().MinWidth(0).Padding(0, 8).Gap(12).Radius(kit.RadiusM)
+						slot = row.Children(func() {
+							p.libraryListBody(c, v, data, &actions, !p.reorder.dragging && (row.Hovered() || row.FocusVisible()))
+						})
 					} else {
 						cell := libraryCellData(v, data)
 						if p.reorder.dragging {
 							cell.Stats = ""
 						}
 						slot = kit.InstanceCell(c, cell, func() { p.Open(v.Key()) }).MinWidth(0)
+						if !p.reorder.dragging && (slot.Hovered() || slot.FocusVisible()) {
+							slot.Children(func() {
+								ui.Box(c).Absolute().Top(8).Right(8).Children(func() { p.quickLaunch(c, v, data, actions) })
+							})
+						}
 					}
 					handle := ui.Local(slot, "reorder-slot", func() ui.Handle { return ui.Handle{} })
 					slot.Bind(handle)
@@ -478,9 +490,6 @@ func (p *Instances) instanceDetail(c *ui.Context, installed []minecraft.Instance
 	panel.Children(func() {
 		ui.Column(c).Grow(1).FillWidth().MinHeight(0).AlignSelf(ui.Center).Gap(kit.Gap(c)).Children(func() {
 			p.instanceHeader(c, v, data, actions)
-			if v.Key() == data.ActiveInstance && data.Status != "" {
-				kit.Line(c, data.Status, kit.Caption)
-			}
 			ui.Column(c).Grow(1).FillWidth().MinHeight(0).Clip().Children(func() {
 				c.Key(v.Key() + ":" + p.tab)
 				kit.SlideMotion(ui.Column(c).Grow(1).FillWidth().MinHeight(0), p.tabForward).Children(func() {

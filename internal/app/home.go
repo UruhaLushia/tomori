@@ -416,7 +416,7 @@ func (a *app) libraryStatistics() map[string]page.LibraryStatistics {
 		if a.instanceContent.data.Key == instance.Key() && !a.instanceContent.data.Loading {
 			mods, known = a.instanceContent.data.Summary.Resources[resource.Mod].Total, true
 		}
-		stats[instance.Key()] = page.LibraryStatistics{Mods: mods, Known: known}
+		stats[instance.Key()] = page.LibraryStatistics{Mods: mods, Known: known, LastPlayed: history.lastPlayed[instance.Key()]}
 	}
 	for key, seconds := range history.totals {
 		value, ok := stats[key]

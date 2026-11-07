@@ -27,10 +27,11 @@ type InstanceContentData struct {
 var instanceTabs = [...]struct {
 	id    string
 	label func() string
+	icon  *ui.SVG
 }{
-	{"", locales.Overview}, {"worlds", locales.Worlds}, {string(resource.Mod), locales.Mods},
-	{string(resource.ResourcePack), locales.ResourcePacks}, {string(resource.ShaderPack), locales.Shaders}, {"screenshots", locales.Screenshots},
-	{"servers", locales.Servers},
+	{"", locales.Overview, kit.Home}, {"worlds", locales.Worlds, kit.Globe}, {string(resource.Mod), locales.Mods, kit.Puzzle},
+	{string(resource.ResourcePack), locales.ResourcePacks, kit.Layers}, {string(resource.ShaderPack), locales.Shaders, kit.Sun}, {"screenshots", locales.Screenshots, kit.Image},
+	{"servers", locales.Servers, kit.Server},
 }
 
 type instanceTabDrag struct {
@@ -122,33 +123,31 @@ func (p *Instances) changeTab(tab string, actions InstancesActions) {
 }
 
 func (p *Instances) contentTabs(c *ui.Context, data InstancesData, actions InstancesActions) {
-	compact := kit.Compact(c)
 	ui.ScrollHorizontal(c).FillWidth().MinWidth(0).Height(kit.TabH()).Shrink(0).Gap(4).TrackScroll(&p.tabScroll).Scrollbars(false).HandleInput(func(ev ui.InputEvent) bool {
 		return p.tabInput(c, ev, actions)
 	}).Children(func() {
 		for i, tab := range instanceTabs {
 			c.Key(tab.id)
-			el := kit.NavTab(c, tab.label(), p.tab == tab.id, func() { p.changeTab(tab.id, actions) }).Shrink(0).Bind(&p.tabHandles[i])
+			el := kit.IconTab(c, tab.icon, tab.label(), p.tab == tab.id, func() { p.changeTab(tab.id, actions) }).Shrink(0).Bind(&p.tabHandles[i])
 			if p.tabReveal && p.tab == tab.id {
 				el.ScrollIntoView()
 			}
-			if !compact {
-				count := 0
-				switch tab.id {
-				case "worlds":
-					count = len(data.Content.Summary.Worlds)
-				case "screenshots":
-					count = len(data.Content.Summary.Screenshots)
-				case "servers":
-					if data.Servers != nil {
-						count = len(data.Servers.List.Entries)
-					}
-				default:
-					count = data.Content.Summary.Resources[resource.Kind(tab.id)].Total
+			count := 0
+			switch tab.id {
+			case "":
+			case "worlds":
+				count = len(data.Content.Summary.Worlds)
+			case "screenshots":
+				count = len(data.Content.Summary.Screenshots)
+			case "servers":
+				if data.Servers != nil {
+					count = len(data.Servers.List.Entries)
 				}
-				if count > 0 {
-					el.Label(fmt.Sprintf("%s %d", tab.label(), count)).Gap(4).Children(func() { kit.Label(c, fmt.Sprint(count), kit.Caption) })
-				}
+			default:
+				count = data.Content.Summary.Resources[resource.Kind(tab.id)].Total
+			}
+			if count > 0 {
+				el.Label(fmt.Sprintf("%s %d", tab.label(), count)).Children(func() { kit.Label(c, fmt.Sprint(count), kit.Caption) })
 			}
 		}
 	})
@@ -157,50 +156,6 @@ func (p *Instances) contentTabs(c *ui.Context, data InstancesData, actions Insta
 
 func (p *Instances) overview(c *ui.Context, v minecraft.Instance, data InstancesData, actions InstancesActions) {
 	p.libraryOverview(c, v, data, actions)
-}
-
-func (p *Instances) recentWorlds(c *ui.Context, data InstancesData, actions InstancesActions) {
-	files := data.Content.Summary.Worlds
-	if len(files) > 3 {
-		files = files[:3]
-	}
-	if len(files) == 0 {
-		kit.Label(c, locales.NoWorlds(), kit.Caption)
-		return
-	}
-	for _, file := range files {
-		c.Key(file.Path)
-		world := data.Content.Worlds[file.Path]
-		name, meta := worldSummary(file, world)
-		row := kit.RowButton(c, "", false, func() { p.worldPath = file.Path }).FillWidth().Height(kit.RowDoubleH()).Padding(0, 8).Gap(12)
-		if row.InView() && actions.LoadWorld != nil {
-			actions.LoadWorld(file)
-		}
-		kit.PresenceMotion(row).Children(func() {
-			kit.IconBadge(c, kit.Folder, 32)
-			ui.Column(c).Grow(1).MinWidth(0).Gap(0).Children(func() { kit.Line(c, name, kit.Strong); kit.Line(c, meta, kit.Caption) })
-			kit.Line(c, file.Modified.Format("01-02 15:04"), kit.Caption).Shrink(0)
-		})
-	}
-}
-
-func (p *Instances) recentScreenshots(c *ui.Context, data InstancesData, actions InstancesActions) {
-	files := data.Content.Summary.Screenshots
-	if len(files) > 3 {
-		files = files[:3]
-	}
-	if len(files) == 0 {
-		kit.Label(c, locales.NoScreenshots(), kit.Caption)
-		return
-	}
-	ui.Row(c).FillWidth().Wrap().Gap(kit.S8).Children(func() {
-		for _, file := range files {
-			c.Key(file.Path)
-			thumb := ui.ButtonBase(c).Grow(1).Basis(160).MinWidth(160).AspectRatio(16.0 / 9.0).Radius(kit.RadiusM).Clip().OnClick(func() { actions.Preview(file.Path) }).Label(locales.PreviewScreenshot() + file.Name)
-			kit.PresenceMotion(thumb)
-			thumb.Children(func() { mediaImage(c, file, data, actions, false) })
-		}
-	})
 }
 
 func worldSummary(file instancecontent.File, world instancecontent.World) (string, string) {

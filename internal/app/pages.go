@@ -203,6 +203,8 @@ func (a *app) instancesPage(c *ui.Context) {
 		Install:       a.install,
 		Loaders:       a.loadLoaderVersions,
 		Repair:        a.repair,
+		Launch:        a.launchVersion,
+		Stop:          a.stopInstance,
 		Refresh: func() {
 			a.scanInstalled()
 			if instance, ok := a.pages.instances.Selected(a.installedList); ok && a.pages.instances.DetailOpen() {

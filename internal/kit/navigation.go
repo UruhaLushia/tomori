@@ -140,6 +140,32 @@ func NavTab(c *ui.Context, label string, selected bool, onClick func()) ui.Eleme
 	})
 }
 
+func IconTab(c *ui.Context, icon *ui.SVG, label string, selected bool, onClick func()) ui.Element {
+	el := ui.ButtonBase(c).Height(TabH()).Padding(0, 10, 0, 8).Gap(6).Radius(RadiusS).AlignItems(ui.Center).OnClick(onClick).Label(label)
+	background := ui.Transparent
+	if selected {
+		background = AccentSoft
+	} else if el.Hovered() || el.FocusVisible() {
+		background = Hover
+	}
+	el.Background(el.AnimateColor("bg", background, topNavSelectAnim))
+	return el.Children(func() {
+		color := Muted
+		if selected {
+			color = AccentText
+		} else if el.Hovered() {
+			color = Text
+		}
+		ink := el.AnimateColor("fg", color, topNavSelectAnim)
+		ui.Icon(c, icon).FontSize(IconPx(14)).TextColor(ink)
+		style := Body
+		if selected {
+			style = Strong
+		}
+		Label(c, label, style).SingleLine().Shrink(0).TextColor(ink)
+	})
+}
+
 func selectedColor(selected bool) ui.Color {
 	if selected {
 		return AccentText

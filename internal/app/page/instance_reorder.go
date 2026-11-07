@@ -23,6 +23,7 @@ type instanceHold struct {
 type instanceReorder struct {
 	preview      instanceInsertion
 	slots        []instanceSlot
+	passthrough  []ui.Handle
 	generation   uint64
 	hold         instanceHold
 	key          string
@@ -143,6 +144,11 @@ func (p *Instances) instanceReorderInput(c *ui.Context, grid ui.Element, install
 		point := ui.Point{X: ev.X, Y: ev.Y}
 		switch ev.Kind {
 		case ui.InputPointerDown:
+			for _, handle := range r.passthrough {
+				if area := handle.Bounds(c); area.W > 0 && area.Contains(bounds.X+ev.X, bounds.Y+ev.Y) {
+					return false
+				}
+			}
 			if ev.Button != 0 {
 				r.cancel()
 				return false
@@ -301,7 +307,7 @@ func (p *Instances) instanceDragPreview(c *ui.Context, installed []minecraft.Ins
 		ui.Box(c).Absolute().Left(bounds.X+r.pointer.X-r.offset.X).Top(bounds.Y+r.pointer.Y-r.offset.Y).
 			Size(r.card.W, r.card.H).Opacity(.92).PassThrough().Children(func() {
 			if p.inline {
-				kit.RowButton(c, "", false, nil).Fill().Padding(0, 8).Gap(12).Radius(kit.RadiusM).Background(kit.Surface).Children(func() { p.libraryListBody(c, installed[index], data) })
+				kit.RowButton(c, "", false, nil).Fill().Padding(0, 8).Gap(12).Radius(kit.RadiusM).Background(kit.Surface).Children(func() { p.libraryListBody(c, installed[index], data, nil, false) })
 			} else {
 				kit.InstanceCell(c, libraryCellData(installed[index], data), nil)
 			}
