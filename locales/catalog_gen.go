@@ -10812,11 +10812,11 @@ func (msgs Messages) TooManyFilesWithTheSameName() string {
 	return Catalog.Format(msgs.locale, "too_many_files_with_the_same_name", nil)
 }
 
-// Classic says "宽手臂"
+// Classic says "标准"
 // in the language the app shows.
 func Classic() string { return In(i18n.Locale()).Classic() }
 
-// Classic says "宽手臂"
+// Classic says "标准"
 // in the language of msgs.
 func (msgs Messages) Classic() string {
 	return Catalog.Format(msgs.locale, "classic", nil)
@@ -10994,21 +10994,11 @@ func (msgs Messages) InvalidSkinModel() string {
 	return Catalog.Format(msgs.locale, "invalid_skin_model", nil)
 }
 
-// SkinView says "皮肤视角"
-// in the language the app shows.
-func SkinView() string { return In(i18n.Locale()).SkinView() }
-
-// SkinView says "皮肤视角"
-// in the language of msgs.
-func (msgs Messages) SkinView() string {
-	return Catalog.Format(msgs.locale, "skin_view", nil)
-}
-
-// Slim says "细手臂"
+// Slim says "苗条"
 // in the language the app shows.
 func Slim() string { return In(i18n.Locale()).Slim() }
 
-// Slim says "细手臂"
+// Slim says "苗条"
 // in the language of msgs.
 func (msgs Messages) Slim() string {
 	return Catalog.Format(msgs.locale, "slim", nil)
@@ -11076,16 +11066,6 @@ func (msgs Messages) Reload2() string {
 	return Catalog.Format(msgs.locale, "reload_2", nil)
 }
 
-// ReloadAppearance says "重新读取外观"
-// in the language the app shows.
-func ReloadAppearance() string { return In(i18n.Locale()).ReloadAppearance() }
-
-// ReloadAppearance says "重新读取外观"
-// in the language of msgs.
-func (msgs Messages) ReloadAppearance() string {
-	return Catalog.Format(msgs.locale, "reload_appearance", nil)
-}
-
 // DefaultSkin says "默认皮肤"
 // in the language the app shows.
 func DefaultSkin() string { return In(i18n.Locale()).DefaultSkin() }
@@ -11094,6 +11074,36 @@ func DefaultSkin() string { return In(i18n.Locale()).DefaultSkin() }
 // in the language of msgs.
 func (msgs Messages) DefaultSkin() string {
 	return Catalog.Format(msgs.locale, "default_skin", nil)
+}
+
+// ImportSkin says "导入皮肤"
+// in the language the app shows.
+func ImportSkin() string { return In(i18n.Locale()).ImportSkin() }
+
+// ImportSkin says "导入皮肤"
+// in the language of msgs.
+func (msgs Messages) ImportSkin() string {
+	return Catalog.Format(msgs.locale, "import_skin", nil)
+}
+
+// NoSkins says "暂无皮肤"
+// in the language the app shows.
+func NoSkins() string { return In(i18n.Locale()).NoSkins() }
+
+// NoSkins says "暂无皮肤"
+// in the language of msgs.
+func (msgs Messages) NoSkins() string {
+	return Catalog.Format(msgs.locale, "no_skins", nil)
+}
+
+// DropASkinFileHere says "将皮肤文件拖到这里"
+// in the language the app shows.
+func DropASkinFileHere() string { return In(i18n.Locale()).DropASkinFileHere() }
+
+// DropASkinFileHere says "将皮肤文件拖到这里"
+// in the language of msgs.
+func (msgs Messages) DropASkinFileHere() string {
+	return Catalog.Format(msgs.locale, "drop_a_skin_file_here", nil)
 }
 
 // TheTomoriPrefixIsReserved says "TOMORI_ 为保留变量前缀"

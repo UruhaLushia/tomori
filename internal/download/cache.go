@@ -13,6 +13,7 @@ const ManifestCache = ".tomori-version-manifest.json"
 const ResourceCache = ".tomori-resources"
 const LoaderCache = ".tomori-loaders"
 const AvatarCache = ".tomori-avatars"
+const AppearanceCache = ".tomori-appearance"
 const AuthlibCache = ".tomori-authlib"
 const NamesCache = ".tomori-resource-names.csv"
 const partialDirectory = ".tomori-downloads"
@@ -24,6 +25,7 @@ var cacheEntries = [...]struct {
 	{AuthlibCache, true},
 	{NamesCache, false},
 	{AvatarCache, true},
+	{AppearanceCache, true},
 	{LoaderCache, true},
 	{ResourceCache, true},
 	{partialDirectory, true},

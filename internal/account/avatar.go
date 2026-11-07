@@ -89,7 +89,7 @@ func (c *Client) Avatar(ctx context.Context, cacheDir string, a Account) (image.
 	if a.Kind == Yggdrasil {
 		raw, err = c.externalTexture(ctx, a, address)
 	} else {
-		raw, err = c.Texture(ctx, address)
+		raw, err = c.TextureCached(ctx, cacheDir, address)
 	}
 	if err != nil {
 		return fallback, err

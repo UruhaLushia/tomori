@@ -4,9 +4,11 @@ import (
 	"bytes"
 	"context"
 	"crypto/rand"
+	"crypto/sha256"
 	"errors"
 	"fmt"
 	"image"
+	"image/color"
 	"image/draw"
 	"image/png"
 	"io"
@@ -18,6 +20,7 @@ import (
 
 	xdraw "golang.org/x/image/draw"
 
+	"github.com/UruhaLushia/tomori/internal/download"
 	"github.com/UruhaLushia/tomori/internal/fsutil"
 	"github.com/UruhaLushia/tomori/internal/storage"
 	"github.com/UruhaLushia/tomori/locales"
@@ -48,6 +51,35 @@ func decodeSkin(raw []byte) (image.Image, error) {
 		return nil, errors.New(locales.InvalidPngSkin())
 	}
 	return img, nil
+}
+
+// DetectSkinVariant follows the same unused-arm-area rule used by skinview3d:
+// transparent, solid-black or solid-white slim-only pixels identify Alex arms.
+func DetectSkinVariant(raw []byte) (string, error) {
+	skin, err := decodeSkin(raw)
+	if err != nil {
+		return "", err
+	}
+	if skin.Bounds().Dy()*2 == skin.Bounds().Dx() {
+		return "classic", nil
+	}
+	scale := skin.Bounds().Dx() / 64
+	areas := [4][4]int{{50, 16, 2, 4}, {54, 20, 2, 12}, {42, 48, 2, 4}, {46, 52, 2, 12}}
+	transparent, black, white := false, true, true
+	for _, area := range areas {
+		for y := area[1] * scale; y < (area[1]+area[3])*scale; y++ {
+			for x := area[0] * scale; x < (area[0]+area[2])*scale; x++ {
+				pixel := color.NRGBAModel.Convert(skin.At(x, y)).(color.NRGBA)
+				transparent = transparent || pixel.A != 0xff
+				black = black && pixel.R == 0 && pixel.G == 0 && pixel.B == 0 && pixel.A == 0xff
+				white = white && pixel.R == 0xff && pixel.G == 0xff && pixel.B == 0xff && pixel.A == 0xff
+			}
+		}
+	}
+	if transparent || black || white {
+		return "slim", nil
+	}
+	return "classic", nil
 }
 
 func ReadSkinFile(ctx context.Context, path string) ([]byte, error) {
@@ -108,6 +140,47 @@ func (c *Client) Texture(ctx context.Context, address string) ([]byte, error) {
 		return nil, err
 	}
 	return raw, nil
+}
+
+// TextureCached keeps immutable Minecraft texture URLs on disk. Texture URLs
+// include the content hash, so a cache entry never needs a time based expiry.
+func (c *Client) TextureCached(ctx context.Context, cacheDir, address string) ([]byte, error) {
+	address, err := textureURL(address)
+	if err != nil {
+		return nil, err
+	}
+	sum := sha256.Sum256([]byte(address))
+	path := filepath.Join(cacheDir, download.AppearanceCache, fmt.Sprintf("%x.png", sum))
+	if raw, ok := readTextureCache(ctx, path); ok {
+		return raw, nil
+	}
+	raw, err := c.Texture(ctx, address)
+	if err != nil {
+		return nil, err
+	}
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err == nil {
+		_ = fsutil.WriteAtomic(path, raw)
+	}
+	return raw, nil
+}
+
+func readTextureCache(ctx context.Context, path string) ([]byte, bool) {
+	if err := ctx.Err(); err != nil {
+		return nil, false
+	}
+	root, err := os.OpenRoot(filepath.Dir(path))
+	if err != nil {
+		return nil, false
+	}
+	defer root.Close()
+	raw, err := fsutil.ReadRootFile(root, filepath.Base(path), skinLimit)
+	if err != nil {
+		return nil, false
+	}
+	if _, err := skinConfig(raw); err != nil {
+		return nil, false
+	}
+	return raw, true
 }
 
 func ExportSkin(ctx context.Context, directory, name string, raw []byte) (string, error) {
