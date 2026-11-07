@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/UruhaLushia/tomori/internal/account"
+	"github.com/UruhaLushia/tomori/internal/cache"
 	"github.com/UruhaLushia/tomori/internal/config"
 	"github.com/UruhaLushia/tomori/internal/download"
 	"github.com/UruhaLushia/tomori/internal/fsutil"
@@ -99,7 +100,7 @@ func (s *Service) forInstance(instance minecraft.Instance) *Service {
 
 // Catalog returns a cached catalog alongside a warning when the network is down.
 func (s *Service) Catalog(ctx context.Context) (*minecraft.Manifest, error) {
-	path := filepath.Join(s.cacheDir, download.ManifestCache)
+	path := cache.File(s.cacheDir, minecraft.OfficialManifestURL)
 	m, err := minecraft.FetchManifest(ctx, s.client)
 	if ctx.Err() != nil {
 		return nil, ctx.Err()

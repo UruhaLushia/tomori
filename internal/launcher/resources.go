@@ -11,6 +11,7 @@ import (
 	"slices"
 	"strings"
 
+	"github.com/UruhaLushia/tomori/internal/cache"
 	"github.com/UruhaLushia/tomori/internal/download"
 	"github.com/UruhaLushia/tomori/internal/fsutil"
 	"github.com/UruhaLushia/tomori/internal/instancecontent"
@@ -613,7 +614,7 @@ func resourceDownloadTasks(cacheDir string, plan []resourcecatalog.InstallFile) 
 		if !allowed {
 			return nil, errors.New(locales.InvalidResourceDownloadUrl())
 		}
-		path := filepath.Join(cacheDir, download.ResourceCache, hash, item.Name)
+		path := cache.File(cacheDir, hash)
 		tasks = append(tasks, download.Task{URL: item.URL, Path: path, SHA1: hash, Size: item.Size})
 	}
 	return tasks, nil

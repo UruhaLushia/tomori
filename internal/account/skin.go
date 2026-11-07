@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"crypto/rand"
-	"crypto/sha256"
 	"errors"
 	"fmt"
 	"image"
@@ -20,7 +19,7 @@ import (
 
 	xdraw "golang.org/x/image/draw"
 
-	"github.com/UruhaLushia/tomori/internal/download"
+	"github.com/UruhaLushia/tomori/internal/cache"
 	"github.com/UruhaLushia/tomori/internal/fsutil"
 	"github.com/UruhaLushia/tomori/internal/storage"
 	"github.com/UruhaLushia/tomori/locales"
@@ -149,8 +148,7 @@ func (c *Client) TextureCached(ctx context.Context, cacheDir, address string) ([
 	if err != nil {
 		return nil, err
 	}
-	sum := sha256.Sum256([]byte(address))
-	path := filepath.Join(cacheDir, download.AppearanceCache, fmt.Sprintf("%x.png", sum))
+	path := cache.File(cacheDir, address)
 	if raw, ok := readTextureCache(ctx, path); ok {
 		return raw, nil
 	}

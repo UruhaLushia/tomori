@@ -26,9 +26,22 @@ func (f *Client) FetchAllWithReuse(ctx context.Context, tasks []Task, workers in
 		}
 		if index, ok := seen[t.Path]; ok {
 			previous := pending[index]
-			if previous.URL != t.URL || previous.SHA1 != t.SHA1 || previous.SHA512 != t.SHA512 || previous.Size != t.Size || previous.MaxSize != t.MaxSize || !slices.Equal(previous.Mirrors, t.Mirrors) {
+			if previous.SHA1 != t.SHA1 || previous.SHA512 != t.SHA512 || previous.Size != t.Size || previous.MaxSize != t.MaxSize {
 				return fmt.Errorf(locales.DownloadTargetConflict(), t.Path)
 			}
+			if previous.URL == "" {
+				previous.URL, t.URL = t.URL, ""
+			}
+			mirrors := append(slices.Clone(previous.Mirrors), t.URL)
+			mirrors = append(mirrors, t.Mirrors...)
+			previous.Mirrors = previous.Mirrors[:0]
+			for _, mirror := range mirrors {
+				if mirror == "" || mirror == previous.URL || slices.Contains(previous.Mirrors, mirror) {
+					continue
+				}
+				previous.Mirrors = append(previous.Mirrors, mirror)
+			}
+			pending[index] = previous
 			continue
 		}
 		seen[t.Path] = len(pending)

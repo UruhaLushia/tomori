@@ -3,7 +3,9 @@ package launcher
 import (
 	"context"
 	"path/filepath"
+	"strings"
 
+	"github.com/UruhaLushia/tomori/internal/cache"
 	"github.com/UruhaLushia/tomori/internal/download"
 	"github.com/UruhaLushia/tomori/internal/fsutil"
 	"github.com/UruhaLushia/tomori/internal/minecraft"
@@ -98,13 +100,13 @@ func (s *Service) packContentSpaceRequirements(ctx context.Context, directory st
 		}
 		installed = storage.Add(installed, uint64(max(0, f.Size)))
 		unknown = unknown || f.Size <= 0
-		tasks = append(tasks, download.Task{Path: filepath.Join(s.cacheDir, download.ResourceCache, f.SHA1, filepath.Base(f.Path)), Size: f.Size})
+		tasks = append(tasks, download.Task{Path: cache.File(s.cacheDir, strings.ToLower(f.SHA1)), Size: f.Size})
 	}
-	cache, err := s.client.SpaceRequirements(ctx, tasks)
+	cacheNeeds, err := s.client.SpaceRequirements(ctx, tasks)
 	if err != nil {
 		return nil, err
 	}
-	needs = append(needs, cache...)
+	needs = append(needs, cacheNeeds...)
 	needs = append(needs, storage.Requirement{Directory: directory, Bytes: installed, Unknown: unknown})
 	return needs, nil
 }

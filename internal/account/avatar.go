@@ -3,11 +3,9 @@ package account
 import (
 	"bytes"
 	"context"
-	"crypto/sha256"
 	"encoding/base64"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"image"
 	"image/color"
 	"image/draw"
@@ -19,7 +17,7 @@ import (
 
 	xdraw "golang.org/x/image/draw"
 
-	"github.com/UruhaLushia/tomori/internal/download"
+	"github.com/UruhaLushia/tomori/internal/cache"
 	"github.com/UruhaLushia/tomori/internal/fsutil"
 	"github.com/UruhaLushia/tomori/locales"
 )
@@ -34,8 +32,7 @@ func (c *Client) Avatar(ctx context.Context, cacheDir string, a Account) (image.
 	if !validUUID(a.UUID) {
 		return fallback, errors.New(locales.InvalidPlayerUuid())
 	}
-	sum := sha256.Sum256([]byte(a.ID + "\x00" + a.UUID + "\x00" + a.SkinURL))
-	path := filepath.Join(cacheDir, download.AvatarCache, fmt.Sprintf("%x.png", sum))
+	path := cache.File(cacheDir, a.ID+"|"+a.UUID+"|"+a.SkinURL)
 	if cached, fresh := c.cachedAvatar(ctx, path); cached != nil {
 		fallback = cached
 		if fresh {

@@ -2,7 +2,6 @@ package launcher
 
 import (
 	"context"
-	"crypto/sha256"
 	"errors"
 	"fmt"
 	"image"
@@ -11,6 +10,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/UruhaLushia/tomori/internal/cache"
 	"github.com/UruhaLushia/tomori/internal/download"
 	"github.com/UruhaLushia/tomori/internal/fsutil"
 	"github.com/UruhaLushia/tomori/internal/minecraft"
@@ -133,8 +133,7 @@ func packFilename(v packcatalog.Version) string {
 }
 
 func (s *Service) packCachePath(v packcatalog.Version) string {
-	key := sha256.Sum256([]byte(v.URL + "\x00" + v.SHA1 + v.SHA512))
-	return filepath.Join(s.cacheDir, download.ResourceCache, "packs", fmt.Sprintf("%x", key), packFilename(v))
+	return cache.File(s.cacheDir, v.URL+"|"+v.SHA1+"|"+v.SHA512)
 }
 
 func (s *Service) FetchPack(ctx context.Context, v packcatalog.Version, progress func(download.Progress)) (string, error) {
@@ -161,8 +160,7 @@ func (s *Service) FetchPack(ctx context.Context, v packcatalog.Version, progress
 	return path, nil
 }
 func (s *Service) PackCover(ctx context.Context, raw string) (image.Image, error) {
-	key := sha256.Sum256([]byte(raw))
-	path := filepath.Join(s.cacheDir, download.ResourceCache, "pack-covers", fmt.Sprintf("%x", key))
+	path := cache.File(s.cacheDir, raw)
 	if err := s.client.Fetch(ctx, download.Task{URL: raw, Path: path, MaxSize: 8 << 20}); err != nil {
 		return nil, err
 	}

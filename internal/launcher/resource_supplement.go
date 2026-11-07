@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/UruhaLushia/tomori/internal/cache"
 	"github.com/UruhaLushia/tomori/internal/download"
 	"github.com/UruhaLushia/tomori/internal/fsutil"
 	"github.com/UruhaLushia/tomori/internal/resource"
@@ -71,8 +72,8 @@ func (s *Service) SupplementResources(ctx context.Context, files []resourcecatal
 			if seen[key] {
 				continue
 			}
-			cache := filepath.Join(s.cacheDir, download.ResourceCache, hash, file.Name)
-			task := download.Task{Path: cache, SHA1: hash, Size: file.Size}
+			path := cache.File(s.cacheDir, hash)
+			task := download.Task{Path: path, SHA1: hash, Size: file.Size}
 			if err := s.client.ReuseLocal(ctx, task, func(download.Task) []string { return []string{path} }); err != nil {
 				problems = append(problems, err)
 				continue

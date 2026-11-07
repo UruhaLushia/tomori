@@ -14,7 +14,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/UruhaLushia/tomori/internal/download"
+	"github.com/UruhaLushia/tomori/internal/cache"
 	"github.com/UruhaLushia/tomori/internal/fsutil"
 	"github.com/UruhaLushia/tomori/internal/storage"
 	"github.com/UruhaLushia/tomori/locales"
@@ -44,26 +44,26 @@ func (c *Client) filePermit(ctx context.Context) (func(), error) {
 }
 
 func (c *Client) Authlib(ctx context.Context, cacheDir string, mirror bool) (string, error) {
-	directory := filepath.Join(cacheDir, download.AuthlibCache)
+	endpoint := "https://authlib-injector.yushi.moe/artifact/latest.json"
+	if mirror {
+		endpoint = "https://bmclapi2.bangbang93.com/mirrors/authlib-injector/artifact/latest.json"
+	}
+	metadata := cache.File(cacheDir, endpoint)
 	if c.budget != nil {
-		release, err := c.budget.Lock(ctx, "authlib", directory)
+		release, err := c.budget.Lock(ctx, "authlib", metadata)
 		if err != nil {
 			return "", err
 		}
 		defer release()
 	}
-	old, fresh := c.cachedAuthlib(ctx, directory)
+	old, fresh := c.cachedAuthlib(ctx, cacheDir, metadata)
 	if fresh {
-		return filepath.Join(directory, old.Checksums.SHA256+".jar"), nil
-	}
-	endpoint := "https://authlib-injector.yushi.moe/artifact/latest.json"
-	if mirror {
-		endpoint = "https://bmclapi2.bangbang93.com/mirrors/authlib-injector/artifact/latest.json"
+		return cache.File(cacheDir, old.Checksums.SHA256), nil
 	}
 	var artifact authlibArtifact
 	if err := c.request(ctx, "GET", endpoint, "", nil, &artifact); err != nil {
 		if old.valid() && ctx.Err() == nil {
-			return filepath.Join(directory, old.Checksums.SHA256+".jar"), nil
+			return cache.File(cacheDir, old.Checksums.SHA256), nil
 		}
 		return "", err
 	}
@@ -71,15 +71,17 @@ func (c *Client) Authlib(ctx context.Context, cacheDir string, mirror bool) (str
 		return "", errors.New(locales.InvalidAuthenticationAgentMetadata())
 	}
 	artifact.Checksums.SHA256 = strings.ToLower(artifact.Checksums.SHA256)
-	name := artifact.Checksums.SHA256 + ".jar"
+	jarPath := cache.File(cacheDir, artifact.Checksums.SHA256)
+	metadataName := filepath.Base(metadata)
+	name := filepath.Base(jarPath)
 	release, err := c.filePermit(ctx)
 	if err != nil {
 		return "", err
 	}
-	err = os.MkdirAll(directory, 0700)
+	err = os.MkdirAll(cacheDir, 0700)
 	var root *os.Root
 	if err == nil {
-		root, err = os.OpenRoot(directory)
+		root, err = os.OpenRoot(cacheDir)
 	}
 	release()
 	if err != nil {
@@ -93,7 +95,7 @@ func (c *Client) Authlib(ctx context.Context, cacheDir string, mirror bool) (str
 	valid := validAuthlib(ctx, root, name, artifact.Checksums.SHA256)
 	release()
 	if !valid {
-		if err := c.downloadAuthlib(ctx, root, directory, name, artifact); err != nil {
+		if err := c.downloadAuthlib(ctx, root, cacheDir, name, artifact); err != nil {
 			return "", err
 		}
 	}
@@ -106,13 +108,13 @@ func (c *Client) Authlib(ctx context.Context, cacheDir string, mirror bool) (str
 	if err != nil {
 		return "", err
 	}
-	if err := fsutil.WriteRootAtomic(ctx, root, "artifact.json", raw); err != nil {
+	if err := fsutil.WriteRootAtomic(ctx, root, metadataName, raw); err != nil {
 		return "", err
 	}
-	return filepath.Join(directory, name), nil
+	return jarPath, nil
 }
 
-func (c *Client) cachedAuthlib(ctx context.Context, directory string) (authlibArtifact, bool) {
+func (c *Client) cachedAuthlib(ctx context.Context, directory, metadata string) (authlibArtifact, bool) {
 	var artifact authlibArtifact
 	release, err := c.filePermit(ctx)
 	if err != nil {
@@ -124,14 +126,14 @@ func (c *Client) cachedAuthlib(ctx context.Context, directory string) (authlibAr
 		return artifact, false
 	}
 	defer root.Close()
-	raw, err := fsutil.ReadRootFile(root, "artifact.json", 16<<10)
+	raw, err := fsutil.ReadRootFile(root, filepath.Base(metadata), 16<<10)
 	if err != nil || json.Unmarshal(raw, &artifact) != nil || !artifact.valid() {
 		return authlibArtifact{}, false
 	}
-	if !validAuthlib(ctx, root, artifact.Checksums.SHA256+".jar", artifact.Checksums.SHA256) {
+	if !validAuthlib(ctx, root, filepath.Base(cache.File(directory, artifact.Checksums.SHA256)), artifact.Checksums.SHA256) {
 		return authlibArtifact{}, false
 	}
-	info, err := root.Stat("artifact.json")
+	info, err := root.Stat(filepath.Base(metadata))
 	return artifact, err == nil && time.Since(info.ModTime()) < 24*time.Hour
 }
 

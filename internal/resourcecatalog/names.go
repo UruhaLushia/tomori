@@ -15,7 +15,7 @@ import (
 	"unicode"
 	"unicode/utf8"
 
-	"github.com/UruhaLushia/tomori/internal/download"
+	"github.com/UruhaLushia/tomori/internal/cache"
 	"github.com/UruhaLushia/tomori/internal/fsutil"
 	"github.com/UruhaLushia/tomori/internal/resource"
 	"github.com/UruhaLushia/tomori/locales"
@@ -115,19 +115,20 @@ func scanNames(ctx context.Context, input io.Reader, visit func(nameRecord)) err
 }
 
 func openCachedNames(cacheDir string) (*os.File, bool, error) {
+	path := cache.File(cacheDir, namesURL)
 	root, err := os.OpenRoot(cacheDir)
 	if err != nil {
 		return nil, false, err
 	}
 	defer root.Close()
-	info, err := root.Lstat(download.NamesCache)
+	info, err := root.Lstat(filepath.Base(path))
 	if err != nil {
 		return nil, false, err
 	}
 	if !info.Mode().IsRegular() || info.Size() <= 0 || info.Size() > namesLimit {
 		return nil, false, errors.New(locales.NameCatalogIsInvalidOrTooLarge())
 	}
-	f, err := root.Open(download.NamesCache)
+	f, err := root.Open(filepath.Base(path))
 	return f, time.Since(info.ModTime()) < namesFresh, err
 }
 
@@ -139,8 +140,8 @@ func (c Client) cachedNames(ctx context.Context, refresh bool, invalid *os.File)
 	if c.Fetcher == nil || c.Fetcher.CacheDir == "" {
 		return nil, os.ErrNotExist
 	}
-	cache := c.Fetcher.CacheDir
-	f, fresh, err := openCachedNames(cache)
+	cacheDir := c.Fetcher.CacheDir
+	f, fresh, err := openCachedNames(cacheDir)
 	valid := func(current *os.File) bool {
 		if invalid == nil {
 			return true
@@ -152,7 +153,7 @@ func (c Client) cachedNames(ctx context.Context, refresh bool, invalid *os.File)
 	if !refresh || err == nil && fresh && valid(f) {
 		return f, err
 	}
-	if !namesRetry(cache) {
+	if !namesRetry(cacheDir) {
 		if f != nil {
 			return f, nil
 		}
@@ -160,7 +161,8 @@ func (c Client) cachedNames(ctx context.Context, refresh bool, invalid *os.File)
 	}
 	updateCtx, cancel := context.WithTimeout(ctx, 15*time.Second)
 	defer cancel()
-	release, err := c.Fetcher.Lock(updateCtx, "resource-names", filepath.Join(cache, download.NamesCache))
+	namePath := cache.File(cacheDir, namesURL)
+	release, err := c.Fetcher.Lock(updateCtx, "resource-names", namePath)
 	if err != nil {
 		if f != nil {
 			return f, nil
@@ -168,7 +170,7 @@ func (c Client) cachedNames(ctx context.Context, refresh bool, invalid *os.File)
 		return nil, err
 	}
 	defer release()
-	if current, fresh, readErr := openCachedNames(cache); readErr == nil {
+	if current, fresh, readErr := openCachedNames(cacheDir); readErr == nil {
 		if fresh && valid(current) {
 			if f != nil {
 				_ = f.Close()
@@ -177,7 +179,7 @@ func (c Client) cachedNames(ctx context.Context, refresh bool, invalid *os.File)
 		}
 		_ = current.Close()
 	}
-	if !namesRetry(cache) {
+	if !namesRetry(cacheDir) {
 		if f != nil {
 			return f, nil
 		}
@@ -188,22 +190,22 @@ func (c Client) cachedNames(ctx context.Context, refresh bool, invalid *os.File)
 		updateErr = scanNames(updateCtx, bytes.NewReader(raw), nil)
 	}
 	if updateErr == nil {
-		updateErr = fsutil.WriteAtomic(filepath.Join(cache, download.NamesCache), raw)
+		updateErr = fsutil.WriteAtomic(namePath, raw)
 	}
 	if updateErr != nil {
 		if ctx.Err() == nil {
-			namesFailed(cache, true)
+			namesFailed(cacheDir, true)
 		}
 		if f != nil {
 			return f, nil
 		}
 		return nil, updateErr
 	}
-	namesFailed(cache, false)
+	namesFailed(cacheDir, false)
 	if f != nil {
 		_ = f.Close()
 	}
-	f, _, err = openCachedNames(cache)
+	f, _, err = openCachedNames(cacheDir)
 	return f, err
 }
 

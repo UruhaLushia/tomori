@@ -18,6 +18,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/UruhaLushia/tomori/internal/cache"
 	"github.com/UruhaLushia/tomori/internal/download"
 	"github.com/UruhaLushia/tomori/internal/fsutil"
 	"github.com/UruhaLushia/tomori/internal/java"
@@ -322,19 +323,19 @@ func (s *Service) preparePackFiles(ctx context.Context, files []modpack.File, lo
 			return nil, fmt.Errorf(locales.DuplicateModpackFile(), f.Path)
 		}
 		seen[key] = true
-		cache := filepath.Join(s.cacheDir, download.ResourceCache, f.SHA1, filepath.Base(f.Path))
-		sources[index] = cache
+		path := cache.File(s.cacheDir, strings.ToLower(f.SHA1))
+		sources[index] = path
 		if len(f.URLs) > 0 {
-			tasks = append(tasks, download.Task{URL: f.URLs[0], Mirrors: f.URLs[1:], Path: cache, SHA1: f.SHA1, SHA512: f.SHA512, Size: f.Size})
+			tasks = append(tasks, download.Task{URL: f.URLs[0], Mirrors: f.URLs[1:], Path: path, SHA1: f.SHA1, SHA512: f.SHA512, Size: f.Size})
 			continue
 		}
-		if s.packFileComplete(ctx, cache, f) {
+		if s.packFileComplete(ctx, path, f) {
 			continue
 		}
 		matched := false
 		for _, p := range localSources(download.Task{Size: f.Size}) {
 			if s.packFileComplete(ctx, p, f) {
-				if err := s.copyPackFileRecorded(ctx, p, cache, f, nil); err != nil {
+				if err := s.copyPackFileRecorded(ctx, p, path, f, nil); err != nil {
 					return nil, err
 				}
 				matched = true

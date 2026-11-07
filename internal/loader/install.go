@@ -5,9 +5,9 @@ import (
 	"errors"
 	"fmt"
 	"net/url"
-	"path/filepath"
 	"strings"
 
+	"github.com/UruhaLushia/tomori/internal/cache"
 	"github.com/UruhaLushia/tomori/internal/download"
 	"github.com/UruhaLushia/tomori/internal/fsutil"
 	"github.com/UruhaLushia/tomori/internal/minecraft"
@@ -72,7 +72,7 @@ func (i *Installer) Install(ctx context.Context, base *minecraft.VersionDetail, 
 	if err != nil {
 		return nil, err
 	}
-	filename := filepath.Join(i.Cache, download.LoaderCache, filepath.FromSlash(maven))
+	filename := cache.File(i.Cache, maven)
 	var checksum string
 	if raw, err := i.Fetcher.Get(ctx, repo+"/"+maven+".sha1"); err == nil {
 		checksum = strings.TrimSpace(string(raw))

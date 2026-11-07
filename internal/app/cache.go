@@ -5,7 +5,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/UruhaLushia/tomori/internal/download"
+	"github.com/UruhaLushia/tomori/internal/cache"
 	"github.com/UruhaLushia/tomori/locales"
 )
 
@@ -42,7 +42,7 @@ func (a *app) refreshCacheUsage(force bool) {
 	s.cancel = cancel
 	a.workers.Go(func() {
 		defer cancel()
-		size, err := download.CacheSize(ctx, dir)
+		size, err := cache.Size(ctx, dir)
 		a.win.Update(func() {
 			if a.ctx.Err() != nil || s.id != id || a.cfg.CacheDirectory() != dir {
 				return
@@ -62,7 +62,7 @@ func (a *app) prepareCache() {
 	a.workers.Go(func() {
 		err := os.MkdirAll(dir, 0o755)
 		if err == nil {
-			err = download.PruneCache(a.ctx, dir)
+			err = cache.Prune(a.ctx, dir)
 		}
 		a.win.Update(func() {
 			if a.ctx.Err() != nil {
@@ -93,7 +93,7 @@ func (a *app) clearCache() {
 	a.pathBusy, a.cacheError, a.cacheStatus = true, "", locales.Clearing()
 	dir := a.cfg.CacheDirectory()
 	a.workers.Go(func() {
-		err := download.ClearCache(dir)
+		err := cache.Clear(dir)
 		a.win.Update(func() {
 			if a.ctx.Err() != nil {
 				return
