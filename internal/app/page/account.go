@@ -62,7 +62,11 @@ func (p *Accounts) View(c *ui.Context, data AccountData, actions AccountActions)
 		if data.Error != "" && !p.addOpen {
 			kit.ErrorText(c, data.Error)
 		}
-		kit.FormGroup(c, locales.AccountsPage(), func() { kit.Label(c, fmt.Sprintf(locales.Items3(), len(data.Accounts.Entries)), kit.Caption) }, func() {
+		kit.FormGroup(c, locales.AccountsPage(), func() {
+			if data.TopNavigation {
+				p.addMenu(c, data, actions)
+			}
+		}, func() {
 			if len(data.Accounts.Entries) == 0 {
 				p.list = ui.ListState{}
 				ui.Box(c).FillWidth().Padding(24).Children(func() {
@@ -124,19 +128,9 @@ func (p *Accounts) Reauthenticate(identity account.Account, actions AccountActio
 	p.chooseKind("microsoft", actions)
 }
 
-// AddMenu renders the account action menu in a section page header.
-// Top navigation places the section tabs and this action outside the page body.
-func (p *Accounts) AddMenu(c *ui.Context, data AccountData, actions AccountActions) {
-	p.addMenu(c, data, actions)
-}
-
 func (p *Accounts) accountRow(c *ui.Context, identity account.Account, data AccountData, actions AccountActions) {
 	selected := identity.ID == data.Accounts.Selected
-	row := kit.LayoutMotion(kit.RowButton(c, "", false, func() {
-		if !selected && !data.Locked && !data.Busy {
-			actions.Select(identity.ID)
-		}
-	}).FillWidth().Height(kit.RowDoubleH()).Padding(0, 8).Gap(12))
+	row := kit.LayoutMotion(ui.Row(c).FillWidth().Height(kit.RowDoubleH()).Padding(0, 8).Gap(12).Radius(kit.RadiusS).AlignItems(ui.Center))
 	row.Label(locales.Account() + identity.Name)
 	row.Children(func() {
 		var avatar *ui.Bitmap
@@ -157,11 +151,7 @@ func (p *Accounts) accountRow(c *ui.Context, identity account.Account, data Acco
 			default:
 				kit.Ghost(c, locales.Use(), func() { actions.Select(identity.ID) }).Height(kit.TabH()).Disabled(data.Locked || data.Busy)
 			}
-			if row.Hovered() {
-				kit.ContextMenuButton(c, row, locales.MoreAccountActions())
-			} else {
-				ui.Box(c).Size(28, 28)
-			}
+			kit.ContextMenuButton(c, row, locales.MoreAccountActions())
 		})
 	})
 	kit.ContextMenu(c, row, func(menu *kit.ContextActions) {

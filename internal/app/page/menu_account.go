@@ -11,6 +11,7 @@ func (p *Accounts) addMenu(c *ui.Context, data AccountData, actions AccountActio
 	c.Key("add-account-menu")
 	menu := kit.SelectBase(c, &p.addAction)
 	kit.MenuButton(c, menu.Trigger.Disabled(data.Locked || data.Busy), locales.AddAccount(), menu.Open()).
+		Height(kit.H(24, kit.Body)).
 		OnChange(func() {
 			kind := p.addAction
 			p.addAction = ""

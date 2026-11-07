@@ -26,12 +26,8 @@ func (a *app) topSectionLayout(c *ui.Context) {
 				})
 			}
 		}
-		var actions func()
-		if a.page == pageAccount {
-			actions = func() { a.dialogs.accounts.AddMenu(c, a.accountData(), a.accountActions(c.Services())) }
-		}
 		ui.Box(c).FillWidth().Margin(pad, pad, 0, pad).Shrink(0).Children(func() {
-			kit.FormColumn(c, func() { kit.PageHeader(c, title, "", tabs, actions) })
+			kit.FormColumn(c, func() { kit.PageHeader(c, title, "", tabs, nil) })
 		})
 		scroll := ui.Scroll(c).Scrollbars(false).Grow(1).FillWidth().MinHeight(0).TrackScroll(&a.sectionScroll)
 		if a.sectionScroll.Y > 0 {
