@@ -21,9 +21,6 @@ go tool mygo build -platform windows/amd64 -skip-installer
 # Windows CLI（mygo 不接受 -tags/-ldflags，使用环境变量传递）
 GOFLAGS='-tags=no_gui,no_tui,no_sqlite' MYGO_LDFLAGS='-H=windows' \
   go tool mygo build -platform windows/amd64 -skip-installer
-
-# 全部桌面平台
-go tool mygo build -platform windows/amd64,windows/arm64,linux/amd64,linux/arm64,linux/loong64,darwin/amd64,darwin/arm64 -skip-installer -skip-dmg
 ```
 
 Windows CLI 需要单独构建：mygo 默认给 Windows 追加 `-H=windowsgui`，程序不会附着控制台，因此从终端启动时看不到输出和错误。CLI 构建用 `MYGO_LDFLAGS='-H=windows'` 切换回控制台子系统，并可用 `no_gui`、`no_tui` 去掉 GUI 和交互式终端入口，不能直接复用 GUI 产物。
