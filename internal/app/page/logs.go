@@ -62,13 +62,7 @@ func (p *Logs) View(c *ui.Context, data LogsData, actions LogsActions) {
 		kit.PageHeader(c, title, "", actions.Tabs, func() {
 			kit.Button(c, locales.History(), func() { p.historyOpen = true; actions.Refresh() })
 			kit.Button(c, locales.Diagnose(), actions.Analyze).Disabled(data.History.Loading || len(lines) == 0)
-			if !kit.Compact(c) {
-				kit.Ghost(c, locales.ClearView(), actions.Clear).Disabled(data.History.File != "")
-			} else {
-				kit.MoreMenu(c, locales.MoreLogActions(), func(menu *kit.ContextActions) {
-					menu.Item(c, "clear", locales.ClearView(), data.History.File != "", actions.Clear)
-				})
-			}
+			kit.Button(c, locales.ClearView(), actions.Clear).Disabled(data.History.File != "")
 			kit.IconButton(c, kit.Folder, false, actions.OpenDirectory).Label(locales.OpenFolder()).Tooltip(locales.OpenFolder())
 		})
 		kit.Toolbar(c, func() {

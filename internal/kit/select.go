@@ -185,6 +185,11 @@ func selectControl[T comparable](c *ui.Context, value *T, label string, options 
 	}
 	if width > 0 {
 		available = width
+	} else {
+		// A shorter selection may leave the previous frame's width here. Keep
+		// enough room for the current label so switching back to a longer one
+		// can expand the trigger again.
+		available = max(available, min(maxValue+36, measuredText(c, text)+prefixWidth+36))
 	}
 	if prefix != "" && min(maxValue, measuredText(c, text))+prefixWidth+36 > available {
 		prefix, prefixWidth = "", 0
