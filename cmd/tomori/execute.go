@@ -8,7 +8,9 @@ import (
 )
 
 func Execute() error {
-	setLocaleFromEnvironment()
+	if len(os.Args) > 1 && !strings.HasPrefix(strings.ToLower(os.Args[1]), "tomori:") {
+		setLocaleFromEnvironment()
+	}
 	return NewRootCommand().Execute()
 }
 
