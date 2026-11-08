@@ -148,7 +148,7 @@ func (c *Client) TextureCached(ctx context.Context, cacheDir, address string) ([
 	if err != nil {
 		return nil, err
 	}
-	path := cache.File(cacheDir, address)
+	path := cache.FileIn(cacheDir, "images", address)
 	if raw, ok := readTextureCache(ctx, path); ok {
 		return raw, nil
 	}

@@ -10,12 +10,9 @@ import (
 	"time"
 )
 
-// File maps an immutable source identity to an opaque cache file. The cache
-// never needs a human-readable name: the source is the lookup key and the
-// file can always be regenerated when it is removed.
-func File(dir, source string) string {
+func FileIn(dir, category, source string) string {
 	sum := sha256.Sum256([]byte(source))
-	return filepath.Join(dir, hex.EncodeToString(sum[:]))
+	return filepath.Join(dir, category, hex.EncodeToString(sum[:]))
 }
 
 func Clear(dir string) error {

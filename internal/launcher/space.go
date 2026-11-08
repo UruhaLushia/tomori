@@ -100,7 +100,7 @@ func (s *Service) packContentSpaceRequirements(ctx context.Context, directory st
 		}
 		installed = storage.Add(installed, uint64(max(0, f.Size)))
 		unknown = unknown || f.Size <= 0
-		tasks = append(tasks, download.Task{Path: cache.File(s.cacheDir, strings.ToLower(f.SHA1)), Size: f.Size})
+		tasks = append(tasks, download.Task{Path: cache.FileIn(s.cacheDir, "downloads", strings.ToLower(f.SHA1)), Size: f.Size})
 	}
 	cacheNeeds, err := s.client.SpaceRequirements(ctx, tasks)
 	if err != nil {

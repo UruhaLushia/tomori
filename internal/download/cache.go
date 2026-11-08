@@ -15,7 +15,7 @@ func (f *Client) segmentedPath(t Task) string {
 	if t.SHA512 != "" {
 		identity += "|" + t.SHA512
 	}
-	return cache.File(f.CacheDir, identity)
+	return cache.FileIn(f.CacheDir, "downloads", identity)
 }
 
 func (f *Client) removeSegmentedFiles(t Task) {

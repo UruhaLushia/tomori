@@ -19,7 +19,7 @@ go run ./cmd/tomori
 go tool mygo build -platform windows/amd64 -skip-installer
 
 # Windows CLI（mygo 不接受 -tags/-ldflags，使用环境变量传递）
-GOFLAGS='-tags=no_gui,no_tui,no_sqlite' MYGO_LDFLAGS='-H=windows' \
+GOFLAGS='-tags=no_gui,no_tui' MYGO_LDFLAGS='-H=windows' \
   go tool mygo build -platform windows/amd64 -skip-installer
 ```
 
@@ -29,9 +29,8 @@ Windows CLI 需要单独构建：mygo 默认给 Windows 追加 `-H=windowsgui`�
 
 - `no_gui`：移除桌面 GUI 入口，仅保留命令行入口。
 - `no_tui`：移除交互式终端界面，适合脚本或无终端环境。
-- `no_sqlite`：不编译 SQLite 存储，改用 JSON 配置存储。
 
-多个标签用逗号连接，例如上面的 Windows CLI 构建同时使用了 `no_gui,no_tui,no_sqlite`。平台标签（如 `windows`、`linux`、`darwin`）由 Go 和 mygo 根据目标平台自动设置，不需要手动传入。
+多个标签用逗号连接，例如上面的 Windows CLI 构建同时使用了 `no_gui,no_tui`。平台标签（如 `windows`、`linux`、`darwin`）由 Go 和 mygo 根据目标平台自动设置，不需要手动传入。
 
 Windows 默认构建使用 GUI 子系统；需要自定义标签或链接参数时，分别设置 `GOFLAGS` 和 `MYGO_LDFLAGS`。
 

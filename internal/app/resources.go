@@ -316,21 +316,24 @@ func (a *app) searchResources(query string, offset int) {
 		if err != nil {
 			return
 		}
-		translated := service.TranslateDescriptions(ctx, result.Hits)
-		if len(translated) > 0 {
-			a.win.Update(func() {
-				if token != a.resources.request || !a.resources.data.Open || a.ctx.Err() != nil {
-					return
-				}
-				for _, project := range translated {
-					for i := range a.resources.data.Search.Hits {
-						if a.resources.data.Search.Hits[i].ID == project.ID {
-							a.resources.data.Search.Hits[i].TranslatedDescription = project.TranslatedDescription
+		var group sync.WaitGroup
+		group.Go(func() {
+			translated := service.TranslateDescriptions(ctx, result.Hits)
+			if len(translated) > 0 {
+				a.win.Update(func() {
+					if token != a.resources.request || !a.resources.data.Open || a.ctx.Err() != nil {
+						return
+					}
+					for _, project := range translated {
+						for i := range a.resources.data.Search.Hits {
+							if a.resources.data.Search.Hits[i].ID == project.ID {
+								a.resources.data.Search.Hits[i].TranslatedDescription = project.TranslatedDescription
+							}
 						}
 					}
-				}
-			})
-		}
+				})
+			}
+		})
 		jobs := make(chan resourcecatalog.Project, len(result.Hits))
 		for _, project := range result.Hits {
 			if project.IconURL != "" {
@@ -338,7 +341,6 @@ func (a *app) searchResources(query string, offset int) {
 			}
 		}
 		close(jobs)
-		var group sync.WaitGroup
 		for range 4 {
 			group.Go(func() {
 				for project := range jobs {

@@ -72,7 +72,7 @@ func (i *Installer) Install(ctx context.Context, base *minecraft.VersionDetail, 
 	if err != nil {
 		return nil, err
 	}
-	filename := cache.File(i.Cache, maven)
+	filename := cache.FileIn(i.Cache, "artifacts", maven)
 	var checksum string
 	if raw, err := i.Fetcher.Get(ctx, repo+"/"+maven+".sha1"); err == nil {
 		checksum = strings.TrimSpace(string(raw))

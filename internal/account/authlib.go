@@ -48,7 +48,7 @@ func (c *Client) Authlib(ctx context.Context, cacheDir string, mirror bool) (str
 	if mirror {
 		endpoint = "https://bmclapi2.bangbang93.com/mirrors/authlib-injector/artifact/latest.json"
 	}
-	metadata := cache.File(cacheDir, endpoint)
+	metadata := cache.FileIn(cacheDir, "metadata", endpoint)
 	if c.budget != nil {
 		release, err := c.budget.Lock(ctx, "authlib", metadata)
 		if err != nil {
@@ -58,12 +58,12 @@ func (c *Client) Authlib(ctx context.Context, cacheDir string, mirror bool) (str
 	}
 	old, fresh := c.cachedAuthlib(ctx, cacheDir, metadata)
 	if fresh {
-		return cache.File(cacheDir, old.Checksums.SHA256), nil
+		return cache.FileIn(cacheDir, "artifacts", old.Checksums.SHA256), nil
 	}
 	var artifact authlibArtifact
 	if err := c.request(ctx, "GET", endpoint, "", nil, &artifact); err != nil {
 		if old.valid() && ctx.Err() == nil {
-			return cache.File(cacheDir, old.Checksums.SHA256), nil
+			return cache.FileIn(cacheDir, "artifacts", old.Checksums.SHA256), nil
 		}
 		return "", err
 	}
@@ -71,31 +71,38 @@ func (c *Client) Authlib(ctx context.Context, cacheDir string, mirror bool) (str
 		return "", errors.New(locales.InvalidAuthenticationAgentMetadata())
 	}
 	artifact.Checksums.SHA256 = strings.ToLower(artifact.Checksums.SHA256)
-	jarPath := cache.File(cacheDir, artifact.Checksums.SHA256)
+	jarPath := cache.FileIn(cacheDir, "artifacts", artifact.Checksums.SHA256)
 	metadataName := filepath.Base(metadata)
 	name := filepath.Base(jarPath)
 	release, err := c.filePermit(ctx)
 	if err != nil {
 		return "", err
 	}
-	err = os.MkdirAll(cacheDir, 0700)
-	var root *os.Root
+	err = os.MkdirAll(filepath.Dir(metadata), 0700)
 	if err == nil {
-		root, err = os.OpenRoot(cacheDir)
+		err = os.MkdirAll(filepath.Dir(jarPath), 0700)
+	}
+	var root, artifacts *os.Root
+	if err == nil {
+		root, err = os.OpenRoot(filepath.Dir(metadata))
+	}
+	if err == nil {
+		artifacts, err = os.OpenRoot(filepath.Dir(jarPath))
 	}
 	release()
 	if err != nil {
 		return "", err
 	}
 	defer root.Close()
+	defer artifacts.Close()
 	release, err = c.filePermit(ctx)
 	if err != nil {
 		return "", err
 	}
-	valid := validAuthlib(ctx, root, name, artifact.Checksums.SHA256)
+	valid := validAuthlib(ctx, artifacts, name, artifact.Checksums.SHA256)
 	release()
 	if !valid {
-		if err := c.downloadAuthlib(ctx, root, cacheDir, name, artifact); err != nil {
+		if err := c.downloadAuthlib(ctx, artifacts, filepath.Dir(jarPath), name, artifact); err != nil {
 			return "", err
 		}
 	}
@@ -121,7 +128,7 @@ func (c *Client) cachedAuthlib(ctx context.Context, directory, metadata string) 
 		return artifact, false
 	}
 	defer release()
-	root, err := os.OpenRoot(directory)
+	root, err := os.OpenRoot(filepath.Dir(metadata))
 	if err != nil {
 		return artifact, false
 	}
@@ -130,7 +137,13 @@ func (c *Client) cachedAuthlib(ctx context.Context, directory, metadata string) 
 	if err != nil || json.Unmarshal(raw, &artifact) != nil || !artifact.valid() {
 		return authlibArtifact{}, false
 	}
-	if !validAuthlib(ctx, root, filepath.Base(cache.File(directory, artifact.Checksums.SHA256)), artifact.Checksums.SHA256) {
+	artifactPath := cache.FileIn(directory, "artifacts", artifact.Checksums.SHA256)
+	artifactRoot, err := os.OpenRoot(filepath.Dir(artifactPath))
+	if err != nil {
+		return authlibArtifact{}, false
+	}
+	defer artifactRoot.Close()
+	if !validAuthlib(ctx, artifactRoot, filepath.Base(artifactPath), artifact.Checksums.SHA256) {
 		return authlibArtifact{}, false
 	}
 	info, err := root.Stat(filepath.Base(metadata))

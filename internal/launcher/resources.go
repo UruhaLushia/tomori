@@ -614,7 +614,7 @@ func resourceDownloadTasks(cacheDir string, plan []resourcecatalog.InstallFile) 
 		if !allowed {
 			return nil, errors.New(locales.InvalidResourceDownloadUrl())
 		}
-		path := cache.File(cacheDir, hash)
+		path := cache.FileIn(cacheDir, "downloads", hash)
 		tasks = append(tasks, download.Task{URL: item.URL, Path: path, SHA1: hash, Size: item.Size})
 	}
 	return tasks, nil

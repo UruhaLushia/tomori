@@ -323,7 +323,7 @@ func (s *Service) preparePackFiles(ctx context.Context, files []modpack.File, lo
 			return nil, fmt.Errorf(locales.DuplicateModpackFile(), f.Path)
 		}
 		seen[key] = true
-		path := cache.File(s.cacheDir, strings.ToLower(f.SHA1))
+		path := cache.FileIn(s.cacheDir, "downloads", strings.ToLower(f.SHA1))
 		sources[index] = path
 		if len(f.URLs) > 0 {
 			tasks = append(tasks, download.Task{URL: f.URLs[0], Mirrors: f.URLs[1:], Path: path, SHA1: f.SHA1, SHA512: f.SHA512, Size: f.Size})

@@ -12,6 +12,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/UruhaLushia/tomori/internal/cache"
 	"github.com/UruhaLushia/tomori/internal/fsutil"
 	"github.com/UruhaLushia/tomori/internal/network"
 	"github.com/UruhaLushia/tomori/locales"
@@ -27,15 +28,17 @@ type Client struct {
 	Segmented        bool
 	SegmentThreshold int64
 	CacheDir         string
+	MetadataCache    *cache.Store
 	Budget           *Budget
 	// PrepareRequest applies credentials to the actual destination, including
 	// redirects and requests issued by the segmented downloader.
-	PrepareRequest func(*http.Request)
-	httpOnce       sync.Once
-	budgetOnce     sync.Once
-	shared         *Budget
-	limitedHTTP    *http.Client
-	received       atomic.Int64
+	PrepareRequest  func(*http.Request)
+	httpOnce        sync.Once
+	budgetOnce      sync.Once
+	shared          *Budget
+	limitedHTTP     *http.Client
+	metadataRefresh sync.Map
+	received        atomic.Int64
 }
 
 type Task struct {
@@ -79,11 +82,71 @@ func (f *Client) GetLimited(ctx context.Context, url string, limit int64) ([]byt
 		return nil, errors.New(locales.InvalidMetadataSizeLimit())
 	}
 	rewritten := f.rewrite(url)
+	if body, ok := f.cachedMetadata(ctx, rewritten, limit); ok {
+		return body, nil
+	}
 	body, err := f.requestLimit(ctx, http.MethodGet, rewritten, nil, nil, limit)
 	if err != nil && rewritten != url && ctx.Err() == nil {
-		return f.requestLimit(ctx, http.MethodGet, url, nil, nil, limit)
+		body, err = f.requestLimit(ctx, http.MethodGet, url, nil, nil, limit)
+	}
+	if err == nil {
+		f.storeMetadata(ctx, rewritten, body)
 	}
 	return body, err
+}
+
+const (
+	metadataFresh = 10 * time.Minute
+	metadataStale = 7 * 24 * time.Hour
+)
+
+func (f *Client) cachedMetadata(ctx context.Context, url string, limit int64) ([]byte, bool) {
+	if f.MetadataCache == nil {
+		return nil, false
+	}
+	body, updated, ok, err := f.MetadataCache.Get(ctx, url)
+	if err != nil || !ok || len(body) == 0 || int64(len(body)) > limit {
+		return nil, false
+	}
+	age := time.Since(updated)
+	if age < 0 {
+		age = 0
+	}
+	if age <= metadataFresh {
+		return body, true
+	}
+	if age <= metadataStale {
+		f.refreshMetadata(url, limit)
+		return body, true
+	}
+	return nil, false
+}
+
+func (f *Client) storeMetadata(ctx context.Context, url string, body []byte) {
+	if f.MetadataCache != nil {
+		_ = f.MetadataCache.Put(ctx, url, body)
+	}
+}
+
+func (f *Client) refreshMetadata(url string, limit int64) {
+	release := f.MetadataCache.Hold()
+	if release == nil {
+		return
+	}
+	if _, loaded := f.metadataRefresh.LoadOrStore(url, struct{}{}); loaded {
+		release()
+		return
+	}
+	go func() {
+		defer release()
+		defer f.metadataRefresh.Delete(url)
+		ctx, cancel := context.WithTimeout(context.Background(), min(f.httpTimeout(), 30*time.Second))
+		defer cancel()
+		body, err := f.requestLimit(ctx, http.MethodGet, url, nil, nil, limit)
+		if err == nil {
+			f.storeMetadata(ctx, url, body)
+		}
+	}()
 }
 
 func (f *Client) PostJSONLimited(ctx context.Context, url string, body, result any, limit int64) error {

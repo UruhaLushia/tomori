@@ -133,7 +133,7 @@ func packFilename(v packcatalog.Version) string {
 }
 
 func (s *Service) packCachePath(v packcatalog.Version) string {
-	return cache.File(s.cacheDir, v.URL+"|"+v.SHA1+"|"+v.SHA512)
+	return cache.FileIn(s.cacheDir, "downloads", v.URL+"|"+v.SHA1+"|"+v.SHA512)
 }
 
 func (s *Service) FetchPack(ctx context.Context, v packcatalog.Version, progress func(download.Progress)) (string, error) {
@@ -160,23 +160,35 @@ func (s *Service) FetchPack(ctx context.Context, v packcatalog.Version, progress
 	return path, nil
 }
 func (s *Service) PackCover(ctx context.Context, raw string) (image.Image, error) {
-	path := cache.File(s.cacheDir, raw)
-	if err := s.client.Fetch(ctx, download.Task{URL: raw, Path: path, MaxSize: 8 << 20}); err != nil {
-		return nil, err
+	path := cache.FileIn(s.cacheDir, "images", raw)
+	var lastErr error
+	for range 2 {
+		if err := s.client.Fetch(ctx, download.Task{URL: raw, Path: path, MaxSize: 8 << 20}); err != nil {
+			return nil, err
+		}
+		release, err := s.client.FilePermit(ctx)
+		if err != nil {
+			return nil, err
+		}
+		f, err := fsutil.OpenRegular(path)
+		if err == nil {
+			data, readErr := io.ReadAll(io.LimitReader(fsutil.ContextReader(ctx, f), (8<<20)+1))
+			_ = f.Close()
+			release()
+			if readErr == nil {
+				if icon, decodeErr := minecraft.DecodeInstanceIcon(data); decodeErr == nil {
+					return icon, nil
+				} else {
+					lastErr = decodeErr
+				}
+			} else {
+				lastErr = readErr
+			}
+		} else {
+			release()
+			return nil, err
+		}
+		_ = os.Remove(path)
 	}
-	release, err := s.client.FilePermit(ctx)
-	if err != nil {
-		return nil, err
-	}
-	defer release()
-	f, err := fsutil.OpenRegular(path)
-	if err != nil {
-		return nil, err
-	}
-	defer func() { _ = f.Close() }()
-	data, err := io.ReadAll(io.LimitReader(fsutil.ContextReader(ctx, f), (8<<20)+1))
-	if err != nil {
-		return nil, err
-	}
-	return minecraft.DecodeInstanceIcon(data)
+	return nil, lastErr
 }

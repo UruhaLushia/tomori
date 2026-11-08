@@ -115,8 +115,8 @@ func scanNames(ctx context.Context, input io.Reader, visit func(nameRecord)) err
 }
 
 func openCachedNames(cacheDir string) (*os.File, bool, error) {
-	path := cache.File(cacheDir, namesURL)
-	root, err := os.OpenRoot(cacheDir)
+	path := cache.FileIn(cacheDir, "metadata", namesURL)
+	root, err := os.OpenRoot(filepath.Dir(path))
 	if err != nil {
 		return nil, false, err
 	}
@@ -161,7 +161,7 @@ func (c Client) cachedNames(ctx context.Context, refresh bool, invalid *os.File)
 	}
 	updateCtx, cancel := context.WithTimeout(ctx, 15*time.Second)
 	defer cancel()
-	namePath := cache.File(cacheDir, namesURL)
+	namePath := cache.FileIn(cacheDir, "metadata", namesURL)
 	release, err := c.Fetcher.Lock(updateCtx, "resource-names", namePath)
 	if err != nil {
 		if f != nil {

@@ -11,11 +11,6 @@ import (
 
 const descriptionTranslationAPI = "https://mod.mcimirror.top/translate"
 
-var descriptionTranslations = struct {
-	sync.RWMutex
-	values map[string]string
-}{values: make(map[string]string)}
-
 func (c Client) TranslateDescriptions(ctx context.Context, projects []Project) []Project {
 	if c.Fetcher == nil || !strings.HasPrefix(strings.ToLower(i18n.Locale()), "zh") {
 		return projects
@@ -49,13 +44,6 @@ func (c Client) translateDescription(ctx context.Context, source Source, id stri
 	if !source.Valid() || id == "" {
 		return "", false
 	}
-	key := string(source) + ":" + id
-	descriptionTranslations.RLock()
-	translated, ok := descriptionTranslations.values[key]
-	descriptionTranslations.RUnlock()
-	if ok {
-		return translated, true
-	}
 	provider := ""
 	switch source {
 	case CurseForge:
@@ -70,12 +58,9 @@ func (c Client) translateDescription(ctx context.Context, source Source, id stri
 	if err := c.Fetcher.GetJSONLimited(ctx, endpoint, &response, 1<<20); err != nil {
 		return "", false
 	}
-	translated = strings.TrimSpace(response.Translated)
+	translated := strings.TrimSpace(response.Translated)
 	if translated == "" {
 		return "", false
 	}
-	descriptionTranslations.Lock()
-	descriptionTranslations.values[key] = translated
-	descriptionTranslations.Unlock()
 	return translated, true
 }

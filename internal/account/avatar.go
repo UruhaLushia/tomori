@@ -32,7 +32,7 @@ func (c *Client) Avatar(ctx context.Context, cacheDir string, a Account) (image.
 	if !validUUID(a.UUID) {
 		return fallback, errors.New(locales.InvalidPlayerUuid())
 	}
-	path := cache.File(cacheDir, a.ID+"|"+a.UUID+"|"+a.SkinURL)
+	path := cache.FileIn(cacheDir, "images", a.ID+"|"+a.UUID+"|"+a.SkinURL)
 	if cached, fresh := c.cachedAvatar(ctx, path); cached != nil {
 		fallback = cached
 		if fresh {

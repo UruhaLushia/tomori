@@ -1,5 +1,3 @@
-//go:build !no_sqlite
-
 package config
 
 import (

@@ -72,7 +72,7 @@ func (s *Service) SupplementResources(ctx context.Context, files []resourcecatal
 			if seen[key] {
 				continue
 			}
-			path := cache.File(s.cacheDir, hash)
+			path := cache.FileIn(s.cacheDir, "downloads", hash)
 			task := download.Task{Path: path, SHA1: hash, Size: file.Size}
 			if err := s.client.ReuseLocal(ctx, task, func(download.Task) []string { return []string{path} }); err != nil {
 				problems = append(problems, err)

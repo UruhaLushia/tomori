@@ -30,12 +30,14 @@ type Service struct {
 	cfg                          config.Config
 	cacheDir, runtimeDir, logDir string
 	client                       *download.Client
+	cache                        *cache.Store
 	store                        *config.Store
 	windowedDisplaySizes         [][2]int
 }
 
 func New(cfg config.Config, store *config.Store, budget ...*download.Budget) *Service {
 	client := download.NewClient(cfg.Download.Proxy)
+	metadataCache, _ := cache.Open(cfg.CacheDirectory())
 	if len(budget) > 0 {
 		client.Budget = budget[0]
 	} else {
@@ -44,6 +46,7 @@ func New(cfg config.Config, store *config.Store, budget ...*download.Budget) *Se
 	}
 	client.UserAgent = "UruhaLushia/Tomori/0.1.0"
 	client.CacheDir = cfg.CacheDirectory()
+	client.MetadataCache = metadataCache
 	key := modpack.CurseForgeKey(cfg.Download.CurseForgeKey)
 	client.PrepareRequest = func(req *http.Request) {
 		// Never forward an API key to an unrelated redirect destination.
@@ -65,10 +68,13 @@ func New(cfg config.Config, store *config.Store, budget ...*download.Budget) *Se
 	client.Segmented = cfg.Download.Segmented
 	client.SegmentThreshold = int64(max(1, min(cfg.Download.SegmentThresholdMB, 1024))) << 20
 	client.HTTP.Timeout = time.Duration(max(10, cfg.Download.TimeoutSeconds)) * time.Second
-	return &Service{cfg: cfg.Clone(), cacheDir: cfg.CacheDirectory(), runtimeDir: store.RuntimeDir(), logDir: store.LogDir(), client: client, store: store}
+	return &Service{cfg: cfg.Clone(), cacheDir: cfg.CacheDirectory(), runtimeDir: store.RuntimeDir(), logDir: store.LogDir(), client: client, cache: metadataCache, store: store}
 }
 
-func (s *Service) Close() { s.client.Close() }
+func (s *Service) Close() {
+	s.client.Close()
+	_ = s.cache.Close()
+}
 
 func (s *Service) discoverJava(ctx context.Context) []java.Runtime {
 	paths := slices.Clone(s.cfg.Java.ManualPaths)
@@ -100,7 +106,7 @@ func (s *Service) forInstance(instance minecraft.Instance) *Service {
 
 // Catalog returns a cached catalog alongside a warning when the network is down.
 func (s *Service) Catalog(ctx context.Context) (*minecraft.Manifest, error) {
-	path := cache.File(s.cacheDir, minecraft.OfficialManifestURL)
+	path := cache.FileIn(s.cacheDir, "metadata", minecraft.OfficialManifestURL)
 	m, err := minecraft.FetchManifest(ctx, s.client)
 	if ctx.Err() != nil {
 		return nil, ctx.Err()
