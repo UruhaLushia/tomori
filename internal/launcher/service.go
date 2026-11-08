@@ -32,7 +32,6 @@ type Service struct {
 	cacheDir, runtimeDir, logDir string
 	client                       *download.Client
 	http                         *httpclient.Client
-	cache                        *cache.Store
 	store                        *config.Store
 	windowedDisplaySizes         [][2]int
 }
@@ -77,13 +76,12 @@ func New(cfg config.Config, store *config.Store, budget ...*download.Budget) *Se
 	client.Segmented = cfg.Download.Segmented
 	client.SegmentThreshold = int64(max(1, min(cfg.Download.SegmentThresholdMB, 1024))) << 20
 	client.HTTP.Timeout = time.Duration(max(10, cfg.Download.TimeoutSeconds)) * time.Second
-	return &Service{cfg: cfg.Clone(), cacheDir: cfg.CacheDirectory(), runtimeDir: store.RuntimeDir(), logDir: store.LogDir(), client: client, http: api, cache: metadataCache, store: store}
+	return &Service{cfg: cfg.Clone(), cacheDir: cfg.CacheDirectory(), runtimeDir: store.RuntimeDir(), logDir: store.LogDir(), client: client, http: api, store: store}
 }
 
 func (s *Service) Close() {
 	s.client.Close()
-	s.http.CloseIdleConnections()
-	_ = s.cache.Close()
+	s.http.Close()
 }
 
 func (s *Service) discoverJava(ctx context.Context) []java.Runtime {

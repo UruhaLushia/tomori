@@ -10,8 +10,6 @@ import (
 	"image/color"
 	"image/draw"
 	"image/png"
-	"io"
-	"net/http"
 	"net/url"
 	"os"
 	"path/filepath"
@@ -114,24 +112,7 @@ func (c *Client) Texture(ctx context.Context, address string) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, address, nil)
-	if err != nil {
-		return nil, err
-	}
-	release, err := c.network(ctx)
-	if err != nil {
-		return nil, err
-	}
-	defer release()
-	resp, err := c.http.Do(req)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf(locales.FailedToReadSkin(), resp.Status)
-	}
-	raw, err := io.ReadAll(io.LimitReader(resp.Body, skinLimit+1))
+	raw, err := c.http.GetResource(ctx, address, skinLimit)
 	if err != nil {
 		return nil, err
 	}

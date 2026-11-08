@@ -37,7 +37,7 @@ func NewClient(proxy proxy.Proxy, budgets ...*download.Budget) *Client {
 	return c
 }
 
-func (c *Client) Close() { c.http.CloseIdleConnections() }
+func (c *Client) Close() { c.http.Close() }
 
 type apiError struct {
 	Status     int     `json:"-"`

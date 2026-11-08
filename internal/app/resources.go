@@ -300,6 +300,7 @@ func (a *app) searchResources(query string, offset int) {
 	r.data.Project = nil
 	r.data.Versions, r.data.Missing, r.data.MissingOpen = nil, nil, false
 	r.data.SearchOffset = offset
+	previousHits := slices.Clone(r.data.Search.Hits)
 	ctx, token := a.resourceContext(time.Minute)
 	cancel := r.cancel
 	instance, kind := r.instance, r.data.Kind
@@ -371,8 +372,20 @@ func (a *app) searchResources(query string, offset int) {
 				})
 			}
 		})
-		jobs := make(chan resourcecatalog.Project, len(result.Hits))
-		for _, project := range result.Hits {
+		projects := result.Hits
+		if offset > 0 {
+			seen := make(map[string]bool, len(previousHits)+len(result.Hits))
+			projects = make([]resourcecatalog.Project, 0, len(previousHits)+len(result.Hits))
+			for _, project := range append(previousHits, result.Hits...) {
+				if seen[project.ID] {
+					continue
+				}
+				seen[project.ID] = true
+				projects = append(projects, project)
+			}
+		}
+		jobs := make(chan resourcecatalog.Project, len(projects))
+		for _, project := range projects {
 			if project.IconURL != "" {
 				jobs <- project
 			}

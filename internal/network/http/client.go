@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"io"
 	nethttp "net/http"
-	"sync"
 	"time"
 
 	"github.com/UruhaLushia/tomori/internal/cache"
@@ -27,13 +26,13 @@ type Permit interface {
 // transfers belong to network/download and should use that package instead.
 type Client struct {
 	*nethttp.Client
-	Rewrite         func(string) string
-	UserAgent       string
-	Retries         int
-	MetadataCache   *cache.Store
-	Budget          Permit
-	PrepareRequest  func(*nethttp.Request)
-	metadataRefresh sync.Map
+	Rewrite        func(string) string
+	UserAgent      string
+	Retries        int
+	MetadataCache  *cache.Store
+	Budget         Permit
+	PrepareRequest func(*nethttp.Request)
+	queue          resourceQueue
 }
 
 func New(p proxy.Proxy, timeout time.Duration) *Client {
@@ -54,6 +53,18 @@ func (c *Client) Clone() *Client {
 		Budget:         c.Budget,
 		PrepareRequest: c.PrepareRequest,
 	}
+}
+
+func (c *Client) Close() {
+	if c == nil {
+		return
+	}
+	c.CloseIdleConnections()
+	c.queue.close(func() {
+		if c.MetadataCache != nil {
+			_ = c.MetadataCache.Close()
+		}
+	})
 }
 
 func (c *Client) Do(req *nethttp.Request) (*nethttp.Response, error) {
@@ -92,21 +103,14 @@ func (c *Client) Get(ctx context.Context, address string) ([]byte, error) {
 }
 
 func (c *Client) GetLimited(ctx context.Context, address string, limit int64) ([]byte, error) {
-	if limit <= 0 || limit > 64<<20 {
-		return nil, errors.New(locales.InvalidMetadataSizeLimit())
+	if err := validLimit(limit); err != nil {
+		return nil, err
 	}
 	rewritten := c.rewrite(address)
 	if body, ok := c.cachedMetadata(ctx, rewritten, limit); ok {
 		return body, nil
 	}
-	body, err := c.requestLimit(ctx, nethttp.MethodGet, rewritten, nil, nil, limit)
-	if err != nil && rewritten != address && ctx.Err() == nil {
-		body, err = c.requestLimit(ctx, nethttp.MethodGet, address, nil, nil, limit)
-	}
-	if err == nil {
-		c.storeMetadata(ctx, rewritten, body)
-	}
-	return body, err
+	return c.queue.get(c, ctx, rewritten, address, limit, false)
 }
 
 const (
@@ -147,13 +151,23 @@ func (c *Client) refreshMetadata(address string, limit int64) {
 	if release == nil {
 		return
 	}
-	if _, loaded := c.metadataRefresh.LoadOrStore(address, struct{}{}); loaded {
+	if _, loaded := c.queue.refresh.LoadOrStore(address, struct{}{}); loaded {
 		release()
 		return
 	}
+	c.queue.mu.Lock()
+	if c.queue.closed {
+		c.queue.mu.Unlock()
+		c.queue.refresh.Delete(address)
+		release()
+		return
+	}
+	c.queue.active.Add(1)
+	c.queue.mu.Unlock()
 	go func() {
 		defer release()
-		defer c.metadataRefresh.Delete(address)
+		defer c.queue.refresh.Delete(address)
+		defer c.queue.active.Done()
 		ctx, cancel := context.WithTimeout(context.Background(), min(c.timeout(), 30*time.Second))
 		defer cancel()
 		body, err := c.requestLimit(ctx, nethttp.MethodGet, address, nil, nil, limit)

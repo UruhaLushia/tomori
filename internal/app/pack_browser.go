@@ -2,6 +2,7 @@ package app
 
 import (
 	"context"
+	"slices"
 	"sync"
 	"time"
 
@@ -164,6 +165,7 @@ func (a *app) searchPacks(offset int) {
 	ctx, cancel, token := a.packBrowserContext()
 	p.data.Filter.Offset = offset
 	p.data.Project = nil
+	previousProjects := slices.Clone(p.data.Result.Projects)
 	filter := p.data.Filter
 	needCategories := len(p.data.Categories) == 0
 	service := a.newService()
@@ -218,8 +220,20 @@ func (a *app) searchPacks(offset int) {
 			return
 		}
 		// Bound cover work separately from the download connection limit.
-		jobs := make(chan packcatalog.Project, len(result.Projects))
-		for _, project := range result.Projects {
+		projects := result.Projects
+		if offset > 0 {
+			seen := make(map[string]bool, len(previousProjects)+len(result.Projects))
+			projects = make([]packcatalog.Project, 0, len(previousProjects)+len(result.Projects))
+			for _, project := range append(previousProjects, result.Projects...) {
+				if seen[project.ID] {
+					continue
+				}
+				seen[project.ID] = true
+				projects = append(projects, project)
+			}
+		}
+		jobs := make(chan packcatalog.Project, len(projects))
+		for _, project := range projects {
 			if project.IconURL != "" {
 				jobs <- project
 			}

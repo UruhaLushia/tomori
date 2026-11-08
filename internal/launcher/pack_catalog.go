@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"image"
-	"io"
 	"os"
 	"path/filepath"
 	"strings"
@@ -166,36 +165,21 @@ type PackCover struct {
 }
 
 func (s *Service) PackCover(ctx context.Context, raw string) (PackCover, error) {
-	path := cache.FileIn(s.cacheDir, "images", raw)
-	var lastErr error
-	for range 2 {
-		if err := s.client.Fetch(ctx, download.Task{URL: raw, Path: path, MaxSize: 8 << 20}); err != nil {
-			return PackCover{}, err
+	data, err := s.http.GetResource(ctx, raw, 8<<20)
+	if err != nil {
+		return PackCover{}, err
+	}
+	icon, err := minecraft.DecodeInstanceIcon(data)
+	if err != nil {
+		data, refreshErr := s.http.RefreshResource(ctx, raw, 8<<20)
+		if refreshErr != nil {
+			return PackCover{}, refreshErr
 		}
-		release, err := s.client.FilePermit(ctx)
+		icon, err = minecraft.DecodeInstanceIcon(data)
 		if err != nil {
 			return PackCover{}, err
 		}
-		f, err := fsutil.OpenRegular(path)
-		if err == nil {
-			data, readErr := io.ReadAll(io.LimitReader(fsutil.ContextReader(ctx, f), (8<<20)+1))
-			_ = f.Close()
-			release()
-			if readErr == nil {
-				if icon, decodeErr := minecraft.DecodeInstanceIcon(data); decodeErr == nil {
-					animation, _ := minecraft.AnimatedIcon(data)
-					return PackCover{Image: icon, Animation: animation}, nil
-				} else {
-					lastErr = decodeErr
-				}
-			} else {
-				lastErr = readErr
-			}
-		} else {
-			release()
-			return PackCover{}, err
-		}
-		_ = os.Remove(path)
 	}
-	return PackCover{}, lastErr
+	animation, _ := minecraft.AnimatedIcon(data)
+	return PackCover{Image: icon, Animation: animation}, nil
 }
