@@ -10,8 +10,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/UruhaLushia/tomori/internal/download"
 	"github.com/UruhaLushia/tomori/internal/fsutil"
+	httpclient "github.com/UruhaLushia/tomori/internal/network/http"
 	"github.com/UruhaLushia/tomori/locales"
 )
 
@@ -39,7 +39,7 @@ type VersionSummary struct {
 	SHA1        string    `json:"sha1"`
 }
 
-func FetchManifest(ctx context.Context, f *download.Client) (*Manifest, error) {
+func FetchManifest(ctx context.Context, f *httpclient.Client) (*Manifest, error) {
 	url := OfficialManifestURL
 	var m Manifest
 	if err := f.GetJSON(ctx, url, &m); err != nil {
@@ -51,7 +51,7 @@ func FetchManifest(ctx context.Context, f *download.Client) (*Manifest, error) {
 	return &m, nil
 }
 
-func FetchVersion(ctx context.Context, f *download.Client, v VersionSummary) (*VersionDetail, error) {
+func FetchVersion(ctx context.Context, f *httpclient.Client, v VersionSummary) (*VersionDetail, error) {
 	if err := fsutil.ValidateID(v.ID); err != nil {
 		return nil, err
 	}

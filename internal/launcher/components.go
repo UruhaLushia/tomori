@@ -67,7 +67,7 @@ func (s *Service) prepareComponents(ctx context.Context, instance minecraft.Inst
 		if err != nil {
 			return err
 		}
-		j, err := java.Ensure(ctx, s.client, detail, s.discoverJava(ctx), s.cfg.Java.RuntimePath(detail.RequiredJava()), s.runtimeDir, s.cfg.Java.AutoDownload, s.cfg.Java.IgnoreCompatibility, progress)
+		j, err := java.Ensure(ctx, s.client, s.http, detail, s.discoverJava(ctx), s.cfg.Java.RuntimePath(detail.RequiredJava()), s.runtimeDir, s.cfg.Java.AutoDownload, s.cfg.Java.IgnoreCompatibility, progress)
 		if err != nil {
 			return err
 		}
@@ -89,14 +89,14 @@ func (s *Service) prepareComponents(ctx context.Context, instance minecraft.Inst
 	if index < 0 {
 		return fmt.Errorf(locales.MinecraftNotFound(), game)
 	}
-	base, err := minecraft.FetchVersion(ctx, s.client, manifest.Versions[index])
+	base, err := minecraft.FetchVersion(ctx, s.http, manifest.Versions[index])
 	if err != nil {
 		return err
 	}
 	if progress != nil {
 		progress(minecraft.Progress{Stage: "java-check"})
 	}
-	j, err := java.Ensure(ctx, s.client, base, s.discoverJava(ctx), s.cfg.Java.RuntimePath(base.RequiredJava()), s.runtimeDir, s.cfg.Java.AutoDownload, s.cfg.Java.IgnoreCompatibility, progress)
+	j, err := java.Ensure(ctx, s.client, s.http, base, s.discoverJava(ctx), s.cfg.Java.RuntimePath(base.RequiredJava()), s.runtimeDir, s.cfg.Java.AutoDownload, s.cfg.Java.IgnoreCompatibility, progress)
 	if err != nil {
 		return err
 	}
@@ -128,7 +128,7 @@ func (s *Service) prepareComponents(ctx context.Context, instance minecraft.Inst
 		if progress != nil {
 			progress(minecraft.Progress{Stage: "loader"})
 		}
-		li := loader.Installer{Fetcher: s.client, Root: instance.GameDir, Cache: s.cacheDir, Java: j.Path, ReuseRoots: installer.ReuseRoots, Progress: progress, OnLine: onLine}
+		li := loader.Installer{Fetcher: s.client, HTTP: s.http, Root: instance.GameDir, Cache: s.cacheDir, Java: j.Path, ReuseRoots: installer.ReuseRoots, Progress: progress, OnLine: onLine}
 		detail, err = li.Install(ctx, base, kind)
 		if err != nil {
 			return err

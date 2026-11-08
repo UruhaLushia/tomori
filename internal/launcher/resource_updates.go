@@ -119,7 +119,7 @@ func (s *Service) checkResourceUpdates(ctx context.Context, instance minecraft.I
 	if err := ctx.Err(); err != nil {
 		return result, err
 	}
-	candidates, err := (resourcecatalog.Client{Fetcher: s.client}).Updates(ctx, source, resourceFilter(instance, kind, ""), hashes, fingerprints)
+	candidates, err := (resourcecatalog.Client{Fetcher: s.http, CacheDir: s.cacheDir, Lock: s.client.Lock}).Updates(ctx, source, resourceFilter(instance, kind, ""), hashes, fingerprints)
 	if err != nil {
 		return result, err
 	}

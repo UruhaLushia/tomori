@@ -12,11 +12,11 @@ import (
 	"strings"
 
 	"github.com/UruhaLushia/tomori/internal/cache"
-	"github.com/UruhaLushia/tomori/internal/download"
 	"github.com/UruhaLushia/tomori/internal/fsutil"
 	"github.com/UruhaLushia/tomori/internal/instancecontent"
 	"github.com/UruhaLushia/tomori/internal/minecraft"
 	"github.com/UruhaLushia/tomori/internal/modrinth"
+	"github.com/UruhaLushia/tomori/internal/network/download"
 	"github.com/UruhaLushia/tomori/internal/resource"
 	"github.com/UruhaLushia/tomori/internal/resourcecatalog"
 	"github.com/UruhaLushia/tomori/internal/storage"
@@ -40,19 +40,19 @@ func resourceFilter(instance minecraft.Instance, kind resource.Kind, category st
 
 func (s *Service) SearchResources(ctx context.Context, instance minecraft.Instance, kind resource.Kind, source resourcecatalog.Source, compatibility resourcecatalog.CompatibilityFilter, category, query string, offset int) (resourcecatalog.SearchResult, error) {
 	filter := compatibility.Apply(resourceFilter(instance, kind, category))
-	return (resourcecatalog.Client{Fetcher: s.client}).Search(ctx, source, query, filter, offset)
+	return (resourcecatalog.Client{Fetcher: s.http, CacheDir: s.cacheDir, Lock: s.client.Lock}).Search(ctx, source, query, filter, offset)
 }
 
 func (s *Service) TranslateDescriptions(ctx context.Context, projects []resourcecatalog.Project) []resourcecatalog.Project {
-	return (resourcecatalog.Client{Fetcher: s.client}).TranslateDescriptions(ctx, projects)
+	return (resourcecatalog.Client{Fetcher: s.http, CacheDir: s.cacheDir, Lock: s.client.Lock}).TranslateDescriptions(ctx, projects)
 }
 
 func (s *Service) ResourceVersions(ctx context.Context, kind resource.Kind, project resourcecatalog.Project) ([]resourcecatalog.Version, error) {
-	return (resourcecatalog.Client{Fetcher: s.client}).Versions(ctx, project, resourcecatalog.Filter{Kind: kind})
+	return (resourcecatalog.Client{Fetcher: s.http, CacheDir: s.cacheDir, Lock: s.client.Lock}).Versions(ctx, project, resourcecatalog.Filter{Kind: kind})
 }
 
 func (s *Service) ResourceVersionDetails(ctx context.Context, version resourcecatalog.Version) (resourcecatalog.VersionDetails, error) {
-	return (resourcecatalog.Client{Fetcher: s.client}).Details(ctx, version)
+	return (resourcecatalog.Client{Fetcher: s.http, CacheDir: s.cacheDir, Lock: s.client.Lock}).Details(ctx, version)
 }
 
 func (s *Service) InstallResource(ctx context.Context, instance minecraft.Instance, kind resource.Kind, version resourcecatalog.Version, progress func(minecraft.Progress)) (int, error) {
@@ -77,9 +77,9 @@ func (s *Service) installDownloadOnly(ctx context.Context, instance minecraft.In
 	var plan []resourcecatalog.InstallFile
 	var err error
 	if version.Source == resourcecatalog.CurseForge {
-		plan, err = (resourcecatalog.Client{Fetcher: s.client}).ResolveCurse(ctx, version, filter, nil)
+		plan, err = (resourcecatalog.Client{Fetcher: s.http, CacheDir: s.cacheDir, Lock: s.client.Lock}).ResolveCurse(ctx, version, filter, nil)
 	} else {
-		resolved, resolveErr := (modrinth.Client{Fetcher: s.client}).Resolve(ctx, version.ID, filter, nil)
+		resolved, resolveErr := (modrinth.Client{Fetcher: s.http}).Resolve(ctx, version.ID, filter, nil)
 		err = resolveErr
 		if err == nil {
 			plan = resourcecatalog.ModrinthPlan(resolved)
@@ -249,7 +249,7 @@ func (s *Service) installResourceVersions(ctx context.Context, instance minecraf
 		knownSizes[file.Kind][file.Size] = true
 	}
 	present := make(map[string]bool)
-	client := modrinth.Client{Fetcher: s.client}
+	client := modrinth.Client{Fetcher: s.http}
 	local := make(map[resource.Kind][]resource.Entry)
 	hashEntries := make(map[string]resource.Entry)
 	hashKinds := make(map[string]resource.Kind)
@@ -307,7 +307,7 @@ func (s *Service) installResourceVersions(ctx context.Context, instance minecraf
 	var plan []resourcecatalog.InstallFile
 	filter := resourceFilter(instance, kind, "")
 	if source == resourcecatalog.CurseForge {
-		catalog := resourcecatalog.Client{Fetcher: s.client}
+		catalog := resourcecatalog.Client{Fetcher: s.http, CacheDir: s.cacheDir, Lock: s.client.Lock}
 		installed, err := catalog.IdentifyCurse(ctx, fingerprints)
 		if err != nil {
 			return 0, err

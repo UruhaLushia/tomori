@@ -1,4 +1,4 @@
-package network
+package proxy
 
 import (
 	"context"
@@ -10,7 +10,6 @@ import (
 	"os"
 	"strconv"
 	"strings"
-	"sync"
 	"unicode"
 
 	"golang.org/x/net/http/httpproxy"
@@ -91,27 +90,19 @@ func Transport(p Proxy) *http.Transport {
 		u, _ := p.proxyURL()
 		t.Proxy = http.ProxyURL(u)
 	default:
-		var once sync.Once
-		var resolve func(*url.URL) (*url.URL, error)
 		t.Proxy = func(req *http.Request) (*url.URL, error) {
-			once.Do(func() {
-				cfg := systemProxy(req.Context())
-				local := false
-				for host := range strings.SplitSeq(cfg.NoProxy, ",") {
-					if strings.TrimSpace(host) == "<local>" {
-						local = true
-					}
+			cfg := systemProxyConfig(req.Context())
+			local := false
+			for host := range strings.SplitSeq(cfg.NoProxy, ",") {
+				if strings.TrimSpace(host) == "<local>" {
+					local = true
 				}
-				cfg.NoProxy = normalizeBypass(cfg.NoProxy)
-				proxy := cfg.ProxyFunc()
-				resolve = func(u *url.URL) (*url.URL, error) {
-					if local && !strings.ContainsAny(u.Hostname(), ".:") {
-						return nil, nil
-					}
-					return proxy(u)
-				}
-			})
-			return resolve(req.URL)
+			}
+			cfg.NoProxy = normalizeBypass(cfg.NoProxy)
+			if local && !strings.ContainsAny(req.URL.Hostname(), ".:") {
+				return nil, nil
+			}
+			return cfg.ProxyFunc()(req.URL)
 		}
 	}
 	return t

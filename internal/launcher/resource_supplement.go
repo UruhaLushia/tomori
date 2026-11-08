@@ -10,8 +10,8 @@ import (
 	"strings"
 
 	"github.com/UruhaLushia/tomori/internal/cache"
-	"github.com/UruhaLushia/tomori/internal/download"
 	"github.com/UruhaLushia/tomori/internal/fsutil"
+	"github.com/UruhaLushia/tomori/internal/network/download"
 	"github.com/UruhaLushia/tomori/internal/resource"
 	"github.com/UruhaLushia/tomori/internal/resourcecatalog"
 	"github.com/UruhaLushia/tomori/locales"

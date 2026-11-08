@@ -6,8 +6,8 @@ import (
 
 	"github.com/egoist/mygo/ui"
 
-	"github.com/UruhaLushia/tomori/internal/download"
 	"github.com/UruhaLushia/tomori/internal/kit"
+	"github.com/UruhaLushia/tomori/internal/network/download"
 	"github.com/UruhaLushia/tomori/internal/storage"
 	"github.com/UruhaLushia/tomori/locales"
 )

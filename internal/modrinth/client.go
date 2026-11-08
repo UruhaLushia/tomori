@@ -10,14 +10,14 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/UruhaLushia/tomori/internal/download"
+	httpclient "github.com/UruhaLushia/tomori/internal/network/http"
 	"github.com/UruhaLushia/tomori/internal/resource"
 	"github.com/UruhaLushia/tomori/locales"
 )
 
 const baseURL = "https://api.modrinth.com/v2"
 
-type Client struct{ Fetcher *download.Client }
+type Client struct{ Fetcher *httpclient.Client }
 
 type Filter struct {
 	Kind        resource.Kind

@@ -8,15 +8,17 @@ import (
 	"sync"
 	"sync/atomic"
 	"time"
+
+	httpclient "github.com/UruhaLushia/tomori/internal/network/http"
 )
 
 func (f *Client) httpClient() *http.Client {
 	f.httpOnce.Do(func() {
 		base := f.HTTP
 		if base == nil {
-			base = http.DefaultClient
+			base = &httpclient.Client{Client: http.DefaultClient}
 		}
-		client := *base
+		client := *base.Client
 		transport := base.Transport
 		if transport == nil {
 			transport = http.DefaultTransport
@@ -30,7 +32,11 @@ func (f *Client) httpClient() *http.Client {
 			t.TLSHandshakeTimeout = 10 * time.Second
 			transport = t
 		}
-		client.Transport = &limitedTransport{base: transport, slots: make(chan struct{}, limit), budget: f.budget(), timeout: client.Timeout, received: &f.received, prepare: f.PrepareRequest}
+		prepare := f.PrepareRequest
+		if prepare == nil && f.HTTP != nil {
+			prepare = f.HTTP.PrepareRequest
+		}
+		client.Transport = &limitedTransport{base: transport, slots: make(chan struct{}, limit), budget: f.budget(), timeout: client.Timeout, received: &f.received, prepare: prepare}
 		// Waiting for a download slot is not part of the network timeout.
 		client.Timeout = 0
 		f.limitedHTTP = &client

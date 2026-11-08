@@ -18,7 +18,7 @@ import (
 )
 
 func (s *Service) LoaderVersions(ctx context.Context, game, kind string) ([]loader.Version, error) {
-	return loader.Versions(ctx, s.client, game, kind)
+	return loader.Versions(ctx, s.http, game, kind)
 }
 
 func (s *Service) InstallWithLoader(ctx context.Context, root string, v minecraft.VersionSummary, kind modpack.Loader, progress func(minecraft.Progress), onLine func(string)) (minecraft.Instance, error) {
@@ -55,7 +55,7 @@ func (s *Service) InstallWithLoader(ctx context.Context, root string, v minecraf
 		}
 		return publishPrism(ctx, stage, parent)
 	}
-	base, err := minecraft.FetchVersion(ctx, s.client, v)
+	base, err := minecraft.FetchVersion(ctx, s.http, v)
 	if err != nil {
 		return minecraft.Instance{}, err
 	}
@@ -70,7 +70,7 @@ func (s *Service) InstallWithLoader(ctx context.Context, root string, v minecraf
 		if err := installer.Install(ctx, base); err != nil {
 			return minecraft.Instance{}, err
 		}
-		j, err := java.Ensure(ctx, s.client, base, s.discoverJava(ctx), s.cfg.Java.RuntimePath(base.RequiredJava()), s.runtimeDir, s.cfg.Java.AutoDownload, s.cfg.Java.IgnoreCompatibility, progress)
+		j, err := java.Ensure(ctx, s.client, s.http, base, s.discoverJava(ctx), s.cfg.Java.RuntimePath(base.RequiredJava()), s.runtimeDir, s.cfg.Java.AutoDownload, s.cfg.Java.IgnoreCompatibility, progress)
 		if err != nil {
 			return minecraft.Instance{}, err
 		}
@@ -79,7 +79,7 @@ func (s *Service) InstallWithLoader(ctx context.Context, root string, v minecraf
 	if progress != nil {
 		progress(minecraft.Progress{Stage: "loader"})
 	}
-	li := loader.Installer{Fetcher: s.client, Root: gameRoot, Cache: s.cacheDir, Java: javaPath, ReuseRoots: reuseRoots, Progress: progress, OnLine: onLine}
+	li := loader.Installer{Fetcher: s.client, HTTP: s.http, Root: gameRoot, Cache: s.cacheDir, Java: javaPath, ReuseRoots: reuseRoots, Progress: progress, OnLine: onLine}
 	detail, err := li.Install(ctx, base, kind)
 	if err != nil {
 		return minecraft.Instance{}, err

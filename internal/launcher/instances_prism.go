@@ -173,7 +173,7 @@ func (s *Service) prismMetadata(ctx context.Context, shared string, component mi
 	missing := len(raw) == 0
 	if missing {
 		var err error
-		raw, err = s.client.Get(ctx, "https://meta.prismlauncher.org/v1/"+filepath.ToSlash(filepath.Join(component.UID, component.Version+".json")))
+		raw, err = s.http.Get(ctx, "https://meta.prismlauncher.org/v1/"+filepath.ToSlash(filepath.Join(component.UID, component.Version+".json")))
 		if err != nil {
 			return nil, err
 		}

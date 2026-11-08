@@ -9,8 +9,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/UruhaLushia/tomori/internal/download"
 	"github.com/UruhaLushia/tomori/internal/fsutil"
+	httpclient "github.com/UruhaLushia/tomori/internal/network/http"
 	"github.com/UruhaLushia/tomori/locales"
 )
 
@@ -19,7 +19,7 @@ type Version struct {
 	Stable bool
 }
 
-func Versions(ctx context.Context, client *download.Client, game, kind string) ([]Version, error) {
+func Versions(ctx context.Context, client *httpclient.Client, game, kind string) ([]Version, error) {
 	if err := fsutil.ValidateID(game); err != nil {
 		return nil, err
 	}

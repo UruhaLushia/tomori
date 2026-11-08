@@ -137,10 +137,10 @@ func (c Client) names(ctx context.Context, refresh bool) (*os.File, error) {
 }
 
 func (c Client) cachedNames(ctx context.Context, refresh bool, invalid *os.File) (*os.File, error) {
-	if c.Fetcher == nil || c.Fetcher.CacheDir == "" {
+	if c.Fetcher == nil || c.CacheDir == "" || c.Lock == nil {
 		return nil, os.ErrNotExist
 	}
-	cacheDir := c.Fetcher.CacheDir
+	cacheDir := c.CacheDir
 	f, fresh, err := openCachedNames(cacheDir)
 	valid := func(current *os.File) bool {
 		if invalid == nil {
@@ -162,7 +162,7 @@ func (c Client) cachedNames(ctx context.Context, refresh bool, invalid *os.File)
 	updateCtx, cancel := context.WithTimeout(ctx, 15*time.Second)
 	defer cancel()
 	namePath := cache.FileIn(cacheDir, "metadata", namesURL)
-	release, err := c.Fetcher.Lock(updateCtx, "resource-names", namePath)
+	release, err := c.Lock(updateCtx, "resource-names", namePath)
 	if err != nil {
 		if f != nil {
 			return f, nil

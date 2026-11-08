@@ -13,12 +13,12 @@ import (
 
 	"github.com/UruhaLushia/tomori/internal/app/page"
 	"github.com/UruhaLushia/tomori/internal/config"
-	"github.com/UruhaLushia/tomori/internal/download"
 	"github.com/UruhaLushia/tomori/internal/java"
 	"github.com/UruhaLushia/tomori/internal/kit"
 	"github.com/UruhaLushia/tomori/internal/launchrequest"
 	"github.com/UruhaLushia/tomori/internal/logstore"
 	"github.com/UruhaLushia/tomori/internal/minecraft"
+	"github.com/UruhaLushia/tomori/internal/network/download"
 	"github.com/UruhaLushia/tomori/internal/systeminfo"
 	"github.com/UruhaLushia/tomori/locales"
 )

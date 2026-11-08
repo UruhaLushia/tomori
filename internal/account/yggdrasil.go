@@ -124,7 +124,7 @@ func (c *Client) publicAuthGet(ctx context.Context, address string, redirects bo
 	if err != nil {
 		return nil, nil, err
 	}
-	client := *c.http
+	client := c.http.Clone()
 	if redirects {
 		client.CheckRedirect = func(req *http.Request, via []*http.Request) error {
 			if len(via) >= 5 || req.URL.User != nil || (req.URL.Scheme != "https" && req.URL.Scheme != "http") || via[len(via)-1].URL.Scheme == "https" && req.URL.Scheme != "https" {

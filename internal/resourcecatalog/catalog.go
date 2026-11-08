@@ -9,11 +9,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/egoist/mygo/i18n"
-	"github.com/UruhaLushia/tomori/internal/download"
 	"github.com/UruhaLushia/tomori/internal/modrinth"
+	httpclient "github.com/UruhaLushia/tomori/internal/network/http"
 	"github.com/UruhaLushia/tomori/internal/resource"
 	"github.com/UruhaLushia/tomori/locales"
+	"github.com/egoist/mygo/i18n"
 )
 
 type Source string
@@ -60,7 +60,11 @@ func (f CompatibilityFilter) Apply(filter Filter) Filter {
 	return filter
 }
 
-type Client struct{ Fetcher *download.Client }
+type Client struct {
+	Fetcher  *httpclient.Client
+	CacheDir string
+	Lock     func(context.Context, string, string) (func(), error)
+}
 type Project struct {
 	Source                                  Source
 	ID, Title, Description, Author, Website string

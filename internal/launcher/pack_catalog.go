@@ -11,25 +11,25 @@ import (
 	"strings"
 
 	"github.com/UruhaLushia/tomori/internal/cache"
-	"github.com/UruhaLushia/tomori/internal/download"
 	"github.com/UruhaLushia/tomori/internal/fsutil"
 	"github.com/UruhaLushia/tomori/internal/minecraft"
 	"github.com/UruhaLushia/tomori/internal/modpack"
+	"github.com/UruhaLushia/tomori/internal/network/download"
 	"github.com/UruhaLushia/tomori/internal/packcatalog"
 	"github.com/UruhaLushia/tomori/locales"
 )
 
 func (s *Service) PackSearch(ctx context.Context, filter packcatalog.Filter) (packcatalog.Result, error) {
-	return (packcatalog.Client{Fetcher: s.client}).Search(ctx, filter)
+	return (packcatalog.Client{Fetcher: s.http}).Search(ctx, filter)
 }
 func (s *Service) PackCategories(ctx context.Context, source string) ([]packcatalog.Category, error) {
-	return (packcatalog.Client{Fetcher: s.client}).Categories(ctx, source)
+	return (packcatalog.Client{Fetcher: s.http}).Categories(ctx, source)
 }
 func (s *Service) PackVersions(ctx context.Context, source, project, game string) ([]packcatalog.Version, error) {
-	return (packcatalog.Client{Fetcher: s.client}).Versions(ctx, source, project, game)
+	return (packcatalog.Client{Fetcher: s.http}).Versions(ctx, source, project, game)
 }
 func (s *Service) ResolvePackURL(ctx context.Context, raw string) (packcatalog.Version, error) {
-	return (packcatalog.Client{Fetcher: s.client}).Resolve(ctx, raw)
+	return (packcatalog.Client{Fetcher: s.http}).Resolve(ctx, raw)
 }
 
 func (s *Service) PackOrigin(ctx context.Context, instance minecraft.Instance) (modpack.OriginHeader, error) {

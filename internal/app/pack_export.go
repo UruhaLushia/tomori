@@ -6,12 +6,12 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/egoist/mygo"
-	"github.com/egoist/mygo/ui"
 	"github.com/UruhaLushia/tomori/internal/app/page"
 	"github.com/UruhaLushia/tomori/internal/launcher"
 	"github.com/UruhaLushia/tomori/internal/minecraft"
 	"github.com/UruhaLushia/tomori/locales"
+	"github.com/egoist/mygo"
+	"github.com/egoist/mygo/ui"
 )
 
 type packExportState struct {

@@ -3,7 +3,7 @@ package loader
 import (
 	"path/filepath"
 
-	"github.com/UruhaLushia/tomori/internal/download"
+	"github.com/UruhaLushia/tomori/internal/network/download"
 )
 
 // Reuse only files whose checksum is supplied by the loader installer.

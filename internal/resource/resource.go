@@ -6,8 +6,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/egoist/mygo/i18n"
 	"github.com/UruhaLushia/tomori/locales"
+	"github.com/egoist/mygo/i18n"
 )
 
 type Kind string

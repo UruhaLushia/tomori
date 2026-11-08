@@ -45,7 +45,7 @@ func (s *Service) exportReferences(ctx context.Context, root *os.Root, include f
 			hashes = append(hashes, file.Hashes["sha1"])
 		}
 		queryCtx, cancel := context.WithTimeout(ctx, 20*time.Second)
-		versions, err := (modrinth.Client{Fetcher: s.client}).Identify(queryCtx, hashes)
+		versions, err := (modrinth.Client{Fetcher: s.http}).Identify(queryCtx, hashes)
 		cancel()
 		if ctx.Err() != nil {
 			return ctx.Err()

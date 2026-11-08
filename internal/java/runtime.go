@@ -12,9 +12,10 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/UruhaLushia/tomori/internal/download"
 	"github.com/UruhaLushia/tomori/internal/fsutil"
 	"github.com/UruhaLushia/tomori/internal/minecraft"
+	"github.com/UruhaLushia/tomori/internal/network/download"
+	httpclient "github.com/UruhaLushia/tomori/internal/network/http"
 	"github.com/UruhaLushia/tomori/locales"
 )
 
@@ -140,7 +141,7 @@ func SupportedMajors() []int {
 	return []int{8, 16, 17, 21, 25}
 }
 
-func Ensure(ctx context.Context, f *download.Client, d *minecraft.VersionDetail, list []Runtime, custom, dir string, auto, ignoreCompatibility bool, progress func(minecraft.Progress)) (Runtime, error) {
+func Ensure(ctx context.Context, f *download.Client, client *httpclient.Client, d *minecraft.VersionDetail, list []Runtime, custom, dir string, auto, ignoreCompatibility bool, progress func(minecraft.Progress)) (Runtime, error) {
 	required := d.RequiredJava()
 	compatible := d.CompatibleJavaMajors
 	if len(compatible) == 0 {
@@ -183,10 +184,10 @@ func Ensure(ctx context.Context, f *download.Client, d *minecraft.VersionDetail,
 	if d.JavaVersion != nil {
 		component = d.JavaVersion.Component
 	}
-	return Download(ctx, f, DownloadRequest{Distribution: DistributionMojang, PackageType: PackageJRE, Major: required, Component: component}, dir, progress)
+	return Download(ctx, f, client, DownloadRequest{Distribution: DistributionMojang, PackageType: PackageJRE, Major: required, Component: component}, dir, progress)
 }
 
-func Download(ctx context.Context, f *download.Client, request DownloadRequest, dir string, progress func(minecraft.Progress)) (Runtime, error) {
+func Download(ctx context.Context, f *download.Client, client *httpclient.Client, request DownloadRequest, dir string, progress func(minecraft.Progress)) (Runtime, error) {
 	if request.Distribution == "" {
 		request.Distribution = DistributionMojang
 	}
@@ -212,12 +213,12 @@ func Download(ctx context.Context, f *download.Client, request DownloadRequest, 
 		if request.PackageType != PackageJRE {
 			return Runtime{}, fmt.Errorf(locales.AutomaticInstallationOfJavaIsNotSupported(), request.Major)
 		}
-		return downloadMojangRuntime(ctx, f, request, dir, progress)
+		return downloadMojangRuntime(ctx, f, client, request, dir, progress)
 	default:
 		if _, ok := DistributionInfoFor(request.Distribution); !ok {
 			return Runtime{}, fmt.Errorf(locales.AutomaticInstallationOfJavaIsNotSupported(), request.Major)
 		}
-		return downloadFoojayRuntime(ctx, f, request, dir, progress)
+		return downloadFoojayRuntime(ctx, client, f, request, dir, progress)
 	}
 }
 
@@ -234,7 +235,7 @@ func downloadComponent(request DownloadRequest) string {
 	return ""
 }
 
-func downloadMojangRuntime(ctx context.Context, f *download.Client, request DownloadRequest, dir string, progress func(minecraft.Progress)) (Runtime, error) {
+func downloadMojangRuntime(ctx context.Context, f *download.Client, client *httpclient.Client, request DownloadRequest, dir string, progress func(minecraft.Progress)) (Runtime, error) {
 	required := request.Major
 	component := request.Component
 	if component == "" {
@@ -256,7 +257,7 @@ func downloadMojangRuntime(ctx context.Context, f *download.Client, request Down
 	var manifest map[string]map[string][]struct {
 		Manifest minecraft.FileRef `json:"manifest"`
 	}
-	if err := f.GetJSON(ctx, runtimeManifestURL, &manifest); err != nil {
+	if err := client.GetJSON(ctx, runtimeManifestURL, &manifest); err != nil {
 		return Runtime{}, err
 	}
 	entries := manifest[platform][component]

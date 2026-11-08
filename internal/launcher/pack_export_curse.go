@@ -28,7 +28,7 @@ func (s *Service) exportCurseReferences(ctx context.Context, root *os.Root, incl
 			return nil
 		}
 		query, cancel := context.WithTimeout(ctx, 20*time.Second)
-		known, err := (resourcecatalog.Client{Fetcher: s.client}).IdentifyCurse(query, batch)
+		known, err := (resourcecatalog.Client{Fetcher: s.http, CacheDir: s.cacheDir, Lock: s.client.Lock}).IdentifyCurse(query, batch)
 		cancel()
 		if ctx.Err() != nil {
 			return ctx.Err()

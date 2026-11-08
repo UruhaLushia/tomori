@@ -3,10 +3,10 @@ package page
 import (
 	"fmt"
 
-	"github.com/egoist/mygo/ui"
 	"github.com/UruhaLushia/tomori/internal/diagnostic"
 	"github.com/UruhaLushia/tomori/internal/kit"
 	"github.com/UruhaLushia/tomori/locales"
+	"github.com/egoist/mygo/ui"
 )
 
 type LogDiagnosticData struct {

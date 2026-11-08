@@ -1,6 +1,6 @@
 //go:build !linux && !windows && !darwin
 
-package network
+package proxy
 
 import (
 	"context"

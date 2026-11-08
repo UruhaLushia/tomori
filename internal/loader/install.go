@@ -8,15 +8,17 @@ import (
 	"strings"
 
 	"github.com/UruhaLushia/tomori/internal/cache"
-	"github.com/UruhaLushia/tomori/internal/download"
 	"github.com/UruhaLushia/tomori/internal/fsutil"
 	"github.com/UruhaLushia/tomori/internal/minecraft"
 	"github.com/UruhaLushia/tomori/internal/modpack"
+	"github.com/UruhaLushia/tomori/internal/network/download"
+	httpclient "github.com/UruhaLushia/tomori/internal/network/http"
 	"github.com/UruhaLushia/tomori/locales"
 )
 
 type Installer struct {
 	Fetcher           *download.Client
+	HTTP              *httpclient.Client
 	Root, Cache, Java string
 	ReuseRoots        []string
 	Progress          func(minecraft.Progress)
@@ -34,7 +36,7 @@ func (i *Installer) Install(ctx context.Context, base *minecraft.VersionDetail, 
 		}
 		var profile minecraft.VersionDetail
 		address := fmt.Sprintf("%s/%s/versions/loader/%s/%s/profile/json", host, api, url.PathEscape(base.ID), url.PathEscape(kind.Version))
-		if err := i.Fetcher.GetJSON(ctx, address, &profile); err != nil {
+		if err := i.HTTP.GetJSON(ctx, address, &profile); err != nil {
 			return nil, err
 		}
 		if profile.InheritsFrom != "" && profile.InheritsFrom != base.ID {
@@ -74,7 +76,7 @@ func (i *Installer) Install(ctx context.Context, base *minecraft.VersionDetail, 
 	}
 	filename := cache.FileIn(i.Cache, "artifacts", maven)
 	var checksum string
-	if raw, err := i.Fetcher.Get(ctx, repo+"/"+maven+".sha1"); err == nil {
+	if raw, err := i.HTTP.Get(ctx, repo+"/"+maven+".sha1"); err == nil {
 		checksum = strings.TrimSpace(string(raw))
 		if fields := strings.Fields(checksum); len(fields) > 0 {
 			checksum = fields[0]

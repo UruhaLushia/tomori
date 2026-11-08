@@ -8,11 +8,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/egoist/mygo"
-	"github.com/egoist/mygo/ui"
 	"github.com/UruhaLushia/tomori/internal/app/page"
 	"github.com/UruhaLushia/tomori/internal/diagnostic"
 	"github.com/UruhaLushia/tomori/locales"
+	"github.com/egoist/mygo"
+	"github.com/egoist/mygo/ui"
 )
 
 type logDiagnosticState struct {

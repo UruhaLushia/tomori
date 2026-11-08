@@ -8,7 +8,7 @@ import (
 	"github.com/UruhaLushia/tomori/internal/config"
 	"github.com/UruhaLushia/tomori/internal/kit"
 	"github.com/UruhaLushia/tomori/internal/minecraft"
-	"github.com/UruhaLushia/tomori/internal/network"
+	proxyconfig "github.com/UruhaLushia/tomori/internal/network/proxy"
 	"github.com/UruhaLushia/tomori/internal/storage"
 	"github.com/UruhaLushia/tomori/locales"
 )
@@ -110,13 +110,13 @@ func (p *Download) View(c *ui.Context, cfg *config.Config, data DownloadData, ac
 	})
 }
 
-func (p *Download) proxySettings(c *ui.Context, proxy *network.Proxy, save func()) {
+func (p *Download) proxySettings(c *ui.Context, proxy *proxyconfig.Proxy, save func()) {
 	kit.Group(c, locales.ProxyLabel(), func() {
 		kit.SettingRow(c, locales.ProxyMode(), "", func() {
 			c.Key("proxy-mode")
-			kit.SegmentedValues(c, &proxy.Mode, []kit.SelectOption[string]{{Value: network.System, Label: locales.SystemProxy()}, {Value: network.Direct, Label: locales.Direct()}, {Value: network.Manual, Label: locales.ManualProxy()}}, save).Label(locales.ProxyMode())
+			kit.SegmentedValues(c, &proxy.Mode, []kit.SelectOption[string]{{Value: proxyconfig.System, Label: locales.SystemProxy()}, {Value: proxyconfig.Direct, Label: locales.Direct()}, {Value: proxyconfig.Manual, Label: locales.ManualProxy()}}, save).Label(locales.ProxyMode())
 		})
-		if proxy.Mode != network.Manual {
+		if proxy.Mode != proxyconfig.Manual {
 			return
 		}
 		kit.FoldMotion(ui.Column(c.Key("proxy-fields")).FillWidth()).Children(func() {

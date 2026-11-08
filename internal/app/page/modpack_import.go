@@ -2,13 +2,13 @@ package page
 
 import (
 	"fmt"
-	"github.com/egoist/mygo/ui"
-	"path/filepath"
-	"strings"
 	"github.com/UruhaLushia/tomori/internal/config"
 	"github.com/UruhaLushia/tomori/internal/kit"
 	"github.com/UruhaLushia/tomori/internal/modpack"
 	"github.com/UruhaLushia/tomori/locales"
+	"github.com/egoist/mygo/ui"
+	"path/filepath"
+	"strings"
 )
 
 type PackImportData struct {

@@ -9,9 +9,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/UruhaLushia/tomori/internal/download"
 	"github.com/UruhaLushia/tomori/internal/fsutil"
 	"github.com/UruhaLushia/tomori/internal/modrinth"
+	httpclient "github.com/UruhaLushia/tomori/internal/network/http"
 	"github.com/UruhaLushia/tomori/locales"
 )
 
@@ -23,7 +23,7 @@ const (
 	curseAPI    = "https://api.curseforge.com/v1"
 )
 
-type Client struct{ Fetcher *download.Client }
+type Client struct{ Fetcher *httpclient.Client }
 type Filter struct {
 	Source, Query, Category, GameVersion, Sort string
 	Offset                                     int

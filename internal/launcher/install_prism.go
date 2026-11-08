@@ -77,7 +77,7 @@ func (s *Service) installPrismStage(ctx context.Context, stage, name, game strin
 	if err != nil {
 		return nil, err
 	}
-	j, err := java.Ensure(ctx, s.client, detail, s.discoverJava(ctx), s.cfg.Java.RuntimePath(detail.RequiredJava()), s.runtimeDir, s.cfg.Java.AutoDownload, s.cfg.Java.IgnoreCompatibility, progress)
+	j, err := java.Ensure(ctx, s.client, s.http, detail, s.discoverJava(ctx), s.cfg.Java.RuntimePath(detail.RequiredJava()), s.runtimeDir, s.cfg.Java.AutoDownload, s.cfg.Java.IgnoreCompatibility, progress)
 	if err != nil {
 		return nil, err
 	}

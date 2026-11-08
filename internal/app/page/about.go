@@ -1,12 +1,12 @@
 package page
 
 import (
+	"github.com/UruhaLushia/tomori/internal/kit"
+	"github.com/UruhaLushia/tomori/locales"
 	"github.com/egoist/mygo"
 	"github.com/egoist/mygo/ui"
 	"path/filepath"
 	"runtime"
-	"github.com/UruhaLushia/tomori/internal/kit"
-	"github.com/UruhaLushia/tomori/locales"
 )
 
 func About(c *ui.Context, configPath string) {

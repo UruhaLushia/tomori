@@ -12,9 +12,9 @@ import (
 
 	"github.com/UruhaLushia/tomori/internal/account"
 	"github.com/UruhaLushia/tomori/internal/app/page"
-	"github.com/UruhaLushia/tomori/internal/download"
 	"github.com/UruhaLushia/tomori/internal/launcher"
-	"github.com/UruhaLushia/tomori/internal/network"
+	"github.com/UruhaLushia/tomori/internal/network/download"
+	"github.com/UruhaLushia/tomori/internal/network/proxy"
 	"github.com/UruhaLushia/tomori/locales"
 )
 
@@ -234,7 +234,7 @@ func (a *app) preparingGames() bool {
 	return false
 }
 
-func (a *app) ensureAccount(ctx context.Context, budget *download.Budget, path string, proxy network.Proxy, identity account.Account) (account.Account, error) {
+func (a *app) ensureAccount(ctx context.Context, budget *download.Budget, path string, proxy proxy.Proxy, identity account.Account) (account.Account, error) {
 	release, err := budget.Lock(ctx, "account:"+identity.ID, path)
 	if err != nil {
 		return identity, err

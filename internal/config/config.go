@@ -5,7 +5,7 @@ import (
 	"slices"
 
 	"github.com/UruhaLushia/tomori/internal/account"
-	"github.com/UruhaLushia/tomori/internal/network"
+	"github.com/UruhaLushia/tomori/internal/network/proxy"
 )
 
 const (
@@ -100,17 +100,17 @@ func (j Java) Clone() Java {
 }
 
 type Download struct {
-	Proxy              network.Proxy `json:"proxy"`
-	CacheDirectory     string        `json:"cacheDirectory"`
-	Source             string        `json:"source"`
-	Segmented          bool          `json:"segmented"`
-	SegmentThresholdMB int           `json:"segmentThresholdMB"`
-	Workers            int           `json:"workers"`
-	SpeedLimitKiB      int           `json:"speedLimitKiB"`
-	Connections        int           `json:"connections"`
-	Retries            int           `json:"retries"`
-	TimeoutSeconds     int           `json:"timeoutSeconds"`
-	CurseForgeKey      string        `json:"curseForgeKey,omitempty"`
+	Proxy              proxy.Proxy `json:"proxy"`
+	CacheDirectory     string      `json:"cacheDirectory"`
+	Source             string      `json:"source"`
+	Segmented          bool        `json:"segmented"`
+	SegmentThresholdMB int         `json:"segmentThresholdMB"`
+	Workers            int         `json:"workers"`
+	SpeedLimitKiB      int         `json:"speedLimitKiB"`
+	Connections        int         `json:"connections"`
+	Retries            int         `json:"retries"`
+	TimeoutSeconds     int         `json:"timeoutSeconds"`
+	CurseForgeKey      string      `json:"curseForgeKey,omitempty"`
 }
 
 func defaults() Config {
@@ -121,7 +121,7 @@ func defaults() Config {
 		Java:        Java{AutoDownload: true},
 		Logging:     Logging{MaxMiB: 256},
 		Launcher:    Launcher{Visibility: LauncherKeepVisible, Close: LauncherStopGames},
-		Download:    Download{Proxy: network.DefaultProxy(), Source: "official", Segmented: true, SegmentThresholdMB: 8, Workers: 16, Connections: 8, Retries: 3, TimeoutSeconds: 60},
+		Download:    Download{Proxy: proxy.DefaultProxy(), Source: "official", Segmented: true, SegmentThresholdMB: 8, Workers: 16, Connections: 8, Retries: 3, TimeoutSeconds: 60},
 	}
 }
 

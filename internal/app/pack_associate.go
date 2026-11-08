@@ -6,13 +6,13 @@ import (
 	"slices"
 	"time"
 
-	"github.com/egoist/mygo/ui"
 	"github.com/UruhaLushia/tomori/internal/app/page"
 	"github.com/UruhaLushia/tomori/internal/launcher"
 	"github.com/UruhaLushia/tomori/internal/minecraft"
 	"github.com/UruhaLushia/tomori/internal/modpack"
 	"github.com/UruhaLushia/tomori/internal/packcatalog"
 	"github.com/UruhaLushia/tomori/locales"
+	"github.com/egoist/mygo/ui"
 )
 
 type packAssociateState struct {

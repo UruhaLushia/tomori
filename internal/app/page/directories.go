@@ -2,10 +2,10 @@ package page
 
 import (
 	"fmt"
-	"github.com/egoist/mygo/ui"
 	"github.com/UruhaLushia/tomori/internal/config"
 	"github.com/UruhaLushia/tomori/internal/kit"
 	"github.com/UruhaLushia/tomori/locales"
+	"github.com/egoist/mygo/ui"
 )
 
 type DirectoryActions struct {

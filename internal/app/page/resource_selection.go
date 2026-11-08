@@ -4,8 +4,8 @@ import (
 	"math"
 	"time"
 
-	"github.com/egoist/mygo/ui"
 	"github.com/UruhaLushia/tomori/internal/resource"
+	"github.com/egoist/mygo/ui"
 )
 
 type resourceSelectionDrag struct {

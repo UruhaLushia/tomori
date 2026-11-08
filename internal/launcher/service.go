@@ -15,11 +15,12 @@ import (
 	"github.com/UruhaLushia/tomori/internal/account"
 	"github.com/UruhaLushia/tomori/internal/cache"
 	"github.com/UruhaLushia/tomori/internal/config"
-	"github.com/UruhaLushia/tomori/internal/download"
 	"github.com/UruhaLushia/tomori/internal/fsutil"
 	"github.com/UruhaLushia/tomori/internal/java"
 	"github.com/UruhaLushia/tomori/internal/minecraft"
 	"github.com/UruhaLushia/tomori/internal/modpack"
+	"github.com/UruhaLushia/tomori/internal/network/download"
+	httpclient "github.com/UruhaLushia/tomori/internal/network/http"
 	"github.com/UruhaLushia/tomori/internal/serverstatus"
 	"github.com/UruhaLushia/tomori/locales"
 )
@@ -30,13 +31,15 @@ type Service struct {
 	cfg                          config.Config
 	cacheDir, runtimeDir, logDir string
 	client                       *download.Client
+	http                         *httpclient.Client
 	cache                        *cache.Store
 	store                        *config.Store
 	windowedDisplaySizes         [][2]int
 }
 
 func New(cfg config.Config, store *config.Store, budget ...*download.Budget) *Service {
-	client := download.NewClient(cfg.Download.Proxy)
+	api := httpclient.New(cfg.Download.Proxy, 5*time.Minute)
+	client := download.NewClient(api)
 	metadataCache, _ := cache.Open(cfg.CacheDirectory())
 	if len(budget) > 0 {
 		client.Budget = budget[0]
@@ -45,10 +48,12 @@ func New(cfg config.Config, store *config.Store, budget ...*download.Budget) *Se
 		client.Budget.SetSpeedLimit(int64(cfg.Download.SpeedLimitKiB) << 10)
 	}
 	client.UserAgent = "UruhaLushia/Tomori/0.1.0"
+	api.UserAgent = client.UserAgent
 	client.CacheDir = cfg.CacheDirectory()
-	client.MetadataCache = metadataCache
+	api.MetadataCache = metadataCache
+	api.Budget = client.Budget
 	key := modpack.CurseForgeKey(cfg.Download.CurseForgeKey)
-	client.PrepareRequest = func(req *http.Request) {
+	prepareRequest := func(req *http.Request) {
 		// Never forward an API key to an unrelated redirect destination.
 		req.Header.Del("x-api-key")
 		if req.URL.Scheme != "https" {
@@ -61,18 +66,23 @@ func New(cfg config.Config, store *config.Store, budget ...*download.Budget) *Se
 			}
 		}
 	}
+	client.PrepareRequest = prepareRequest
+	api.PrepareRequest = prepareRequest
 	client.Rewrite = minecraft.ParseSource(cfg.Download.Source).Rewrite
+	api.Rewrite = client.Rewrite
 	client.Workers = max(1, min(cfg.Download.Workers, 32))
 	client.Connections = max(1, min(cfg.Download.Connections, 32))
 	client.Retries = max(0, min(cfg.Download.Retries, 10))
+	api.Retries = client.Retries
 	client.Segmented = cfg.Download.Segmented
 	client.SegmentThreshold = int64(max(1, min(cfg.Download.SegmentThresholdMB, 1024))) << 20
 	client.HTTP.Timeout = time.Duration(max(10, cfg.Download.TimeoutSeconds)) * time.Second
-	return &Service{cfg: cfg.Clone(), cacheDir: cfg.CacheDirectory(), runtimeDir: store.RuntimeDir(), logDir: store.LogDir(), client: client, cache: metadataCache, store: store}
+	return &Service{cfg: cfg.Clone(), cacheDir: cfg.CacheDirectory(), runtimeDir: store.RuntimeDir(), logDir: store.LogDir(), client: client, http: api, cache: metadataCache, store: store}
 }
 
 func (s *Service) Close() {
 	s.client.Close()
+	s.http.CloseIdleConnections()
 	_ = s.cache.Close()
 }
 
@@ -86,7 +96,7 @@ func (s *Service) discoverJava(ctx context.Context) []java.Runtime {
 }
 
 func (s *Service) DownloadJava(ctx context.Context, request java.DownloadRequest, progress func(minecraft.Progress)) (java.Runtime, error) {
-	return java.Download(ctx, s.client, request, s.runtimeDir, progress)
+	return java.Download(ctx, s.client, s.http, request, s.runtimeDir, progress)
 }
 
 func (s *Service) lockRoot(ctx context.Context, root string, progress func(minecraft.Progress)) (func(), error) {
@@ -107,7 +117,7 @@ func (s *Service) forInstance(instance minecraft.Instance) *Service {
 // Catalog returns a cached catalog alongside a warning when the network is down.
 func (s *Service) Catalog(ctx context.Context) (*minecraft.Manifest, error) {
 	path := cache.FileIn(s.cacheDir, "metadata", minecraft.OfficialManifestURL)
-	m, err := minecraft.FetchManifest(ctx, s.client)
+	m, err := minecraft.FetchManifest(ctx, s.http)
 	if ctx.Err() != nil {
 		return nil, ctx.Err()
 	}
@@ -142,7 +152,7 @@ func (s *Service) Install(ctx context.Context, root string, v minecraft.VersionS
 		return minecraft.Instance{}, err
 	}
 	defer release()
-	detail, err := minecraft.FetchVersion(ctx, s.client, v)
+	detail, err := minecraft.FetchVersion(ctx, s.http, v)
 	if err != nil {
 		return minecraft.Instance{}, err
 	}
@@ -296,7 +306,7 @@ func (s *Service) PrepareLaunch(ctx context.Context, instance minecraft.Instance
 	if len(list) == 0 && customJava == "" {
 		list = s.discoverJava(ctx)
 	}
-	j, err := java.Ensure(ctx, s.client, detail, list, customJava, s.runtimeDir, s.cfg.Java.AutoDownload, s.cfg.Java.IgnoreCompatibility, progress)
+	j, err := java.Ensure(ctx, s.client, s.http, detail, list, customJava, s.runtimeDir, s.cfg.Java.AutoDownload, s.cfg.Java.IgnoreCompatibility, progress)
 	if err != nil {
 		return nil, java.Runtime{}, err
 	}

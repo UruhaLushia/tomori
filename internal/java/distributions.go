@@ -17,9 +17,10 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/UruhaLushia/tomori/internal/download"
 	"github.com/UruhaLushia/tomori/internal/fsutil"
 	"github.com/UruhaLushia/tomori/internal/minecraft"
+	"github.com/UruhaLushia/tomori/internal/network/download"
+	httpclient "github.com/UruhaLushia/tomori/internal/network/http"
 	"github.com/UruhaLushia/tomori/locales"
 )
 
@@ -47,7 +48,7 @@ type foojayPackageInfoResponse struct {
 	Result []foojayPackageInfo `json:"result"`
 }
 
-func downloadFoojayRuntime(ctx context.Context, f *download.Client, request DownloadRequest, dir string, progress func(minecraft.Progress)) (Runtime, error) {
+func downloadFoojayRuntime(ctx context.Context, client *httpclient.Client, f *download.Client, request DownloadRequest, dir string, progress func(minecraft.Progress)) (Runtime, error) {
 	targetPlatform, operatingSystem, architecture, archiveType, ok := zuluTarget()
 	if !ok {
 		return Runtime{}, errors.New(locales.NoOfficialJavaRuntimeForThisPlatformChooseAPathManually())
@@ -64,7 +65,7 @@ func downloadFoojayRuntime(ctx context.Context, f *download.Client, request Down
 		"directly_downloadable": {"true"},
 	}
 	var packages foojayPackagesResponse
-	if err := f.GetJSON(ctx, foojayPackagesURL+"?"+query.Encode(), &packages); err != nil {
+	if err := client.GetJSON(ctx, foojayPackagesURL+"?"+query.Encode(), &packages); err != nil {
 		return Runtime{}, err
 	}
 	if len(packages.Result) == 0 {
@@ -75,7 +76,7 @@ func downloadFoojayRuntime(ctx context.Context, f *download.Client, request Down
 		return Runtime{}, errors.New(locales.RuntimeFileMetadataIncomplete())
 	}
 	var info foojayPackageInfoResponse
-	if err := f.GetJSON(ctx, "https://api.foojay.io/disco/v3.0/ids/"+url.PathEscape(selected.ID), &info); err != nil {
+	if err := client.GetJSON(ctx, "https://api.foojay.io/disco/v3.0/ids/"+url.PathEscape(selected.ID), &info); err != nil {
 		return Runtime{}, err
 	}
 	if len(info.Result) == 0 || info.Result[0].Download == "" || !strings.EqualFold(info.Result[0].ChecksumType, "sha256") {

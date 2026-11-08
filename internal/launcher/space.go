@@ -6,10 +6,10 @@ import (
 	"strings"
 
 	"github.com/UruhaLushia/tomori/internal/cache"
-	"github.com/UruhaLushia/tomori/internal/download"
 	"github.com/UruhaLushia/tomori/internal/fsutil"
 	"github.com/UruhaLushia/tomori/internal/minecraft"
 	"github.com/UruhaLushia/tomori/internal/modpack"
+	"github.com/UruhaLushia/tomori/internal/network/download"
 	"github.com/UruhaLushia/tomori/internal/resource"
 	"github.com/UruhaLushia/tomori/internal/storage"
 )
@@ -26,7 +26,7 @@ func (s *Service) installSpaceRequirements(ctx context.Context, directory string
 		}
 		return s.prismSpaceRequirements(ctx, parent, summary.ID, loaders)
 	}
-	detail, err := minecraft.FetchVersion(ctx, s.client, summary)
+	detail, err := minecraft.FetchVersion(ctx, s.http, summary)
 	if err != nil {
 		return nil, err
 	}
@@ -127,7 +127,7 @@ func (s *Service) AssessPackImport(ctx context.Context, directory string, info m
 		}
 		return storage.Assess(ctx, append(needs, runtime...))
 	}
-	manifest, err := minecraft.FetchManifest(ctx, s.client)
+	manifest, err := minecraft.FetchManifest(ctx, s.http)
 	if err != nil {
 		return storage.Report{}, err
 	}
@@ -136,7 +136,7 @@ func (s *Service) AssessPackImport(ctx context.Context, directory string, info m
 			continue
 		}
 		parent = filepath.Join(directory, "instances")
-		detail, err := minecraft.FetchVersion(ctx, s.client, summary)
+		detail, err := minecraft.FetchVersion(ctx, s.http, summary)
 		if err != nil {
 			return storage.Report{}, err
 		}

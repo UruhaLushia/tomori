@@ -19,12 +19,12 @@ import (
 	"time"
 
 	"github.com/UruhaLushia/tomori/internal/cache"
-	"github.com/UruhaLushia/tomori/internal/download"
 	"github.com/UruhaLushia/tomori/internal/fsutil"
 	"github.com/UruhaLushia/tomori/internal/java"
 	"github.com/UruhaLushia/tomori/internal/loader"
 	"github.com/UruhaLushia/tomori/internal/minecraft"
 	"github.com/UruhaLushia/tomori/internal/modpack"
+	"github.com/UruhaLushia/tomori/internal/network/download"
 	"github.com/UruhaLushia/tomori/internal/storage"
 	"github.com/UruhaLushia/tomori/locales"
 )
@@ -104,7 +104,7 @@ func (s *Service) ImportPack(ctx context.Context, request PackImport, progress f
 	if prism && a.Profile != nil && len(a.Info.Loaders) == 0 {
 		return minecraft.Instance{}, errors.New(locales.ThisModpackHasCustomVersionSettingsChooseARegularGameDirectoryInsteadOfPrism())
 	}
-	files, err := modpack.Resolve(ctx, s.client, a.Info, modpack.CurseForgeKey(s.cfg.Download.CurseForgeKey), request.Optional)
+	files, err := modpack.Resolve(ctx, s.http, a.Info, modpack.CurseForgeKey(s.cfg.Download.CurseForgeKey), request.Optional)
 	if err != nil {
 		return minecraft.Instance{}, err
 	}
@@ -151,7 +151,7 @@ func (s *Service) ImportPack(ctx context.Context, request PackImport, progress f
 			return minecraft.Instance{}, err
 		}
 	} else {
-		manifest, err := minecraft.FetchManifest(ctx, s.client)
+		manifest, err := minecraft.FetchManifest(ctx, s.http)
 		if err != nil {
 			return minecraft.Instance{}, err
 		}
@@ -165,7 +165,7 @@ func (s *Service) ImportPack(ctx context.Context, request PackImport, progress f
 		if summary.URL == "" {
 			return minecraft.Instance{}, fmt.Errorf(locales.MinecraftNotFound(), a.Info.GameVersion)
 		}
-		base, err := minecraft.FetchVersion(ctx, s.client, summary)
+		base, err := minecraft.FetchVersion(ctx, s.http, summary)
 		if err != nil {
 			return minecraft.Instance{}, err
 		}
@@ -181,7 +181,7 @@ func (s *Service) ImportPack(ctx context.Context, request PackImport, progress f
 			kind := a.Info.Loaders[0]
 			var javaPath string
 			if kind.ID == "forge" || kind.ID == "neoforge" {
-				j, err := java.Ensure(ctx, s.client, base, s.discoverJava(ctx), s.cfg.Java.RuntimePath(base.RequiredJava()), s.runtimeDir, s.cfg.Java.AutoDownload, s.cfg.Java.IgnoreCompatibility, progress)
+				j, err := java.Ensure(ctx, s.client, s.http, base, s.discoverJava(ctx), s.cfg.Java.RuntimePath(base.RequiredJava()), s.runtimeDir, s.cfg.Java.AutoDownload, s.cfg.Java.IgnoreCompatibility, progress)
 				if err != nil {
 					return minecraft.Instance{}, err
 				}
@@ -190,7 +190,7 @@ func (s *Service) ImportPack(ctx context.Context, request PackImport, progress f
 			if progress != nil {
 				progress(minecraft.Progress{Stage: "loader"})
 			}
-			l := loader.Installer{Fetcher: s.client, Root: root, Cache: s.cacheDir, Java: javaPath, ReuseRoots: installer.ReuseRoots, Progress: progress, OnLine: onLine}
+			l := loader.Installer{Fetcher: s.client, HTTP: s.http, Root: root, Cache: s.cacheDir, Java: javaPath, ReuseRoots: installer.ReuseRoots, Progress: progress, OnLine: onLine}
 			detail, err = l.Install(ctx, base, kind)
 			if err != nil {
 				return minecraft.Instance{}, err

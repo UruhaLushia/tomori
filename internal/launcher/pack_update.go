@@ -14,10 +14,10 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/UruhaLushia/tomori/internal/download"
 	"github.com/UruhaLushia/tomori/internal/fsutil"
 	"github.com/UruhaLushia/tomori/internal/minecraft"
 	"github.com/UruhaLushia/tomori/internal/modpack"
+	"github.com/UruhaLushia/tomori/internal/network/download"
 	"github.com/UruhaLushia/tomori/internal/storage"
 	"github.com/UruhaLushia/tomori/locales"
 )
@@ -186,7 +186,7 @@ func (s *Service) PreparePackUpdate(ctx context.Context, instance minecraft.Inst
 		return nil, err
 	}
 	p.profile = a.Profile
-	files, err := modpack.Resolve(ctx, s.client, a.Info, modpack.CurseForgeKey(s.cfg.Download.CurseForgeKey), request.Optional)
+	files, err := modpack.Resolve(ctx, s.http, a.Info, modpack.CurseForgeKey(s.cfg.Download.CurseForgeKey), request.Optional)
 	if err != nil {
 		return nil, err
 	}

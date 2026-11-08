@@ -1,11 +1,11 @@
 package page
 
 import (
-	"github.com/egoist/mygo/ui"
 	"github.com/UruhaLushia/tomori/internal/instancecontent"
 	"github.com/UruhaLushia/tomori/internal/kit"
 	"github.com/UruhaLushia/tomori/internal/storage"
 	"github.com/UruhaLushia/tomori/locales"
+	"github.com/egoist/mygo/ui"
 )
 
 type ScreenshotEditData struct {

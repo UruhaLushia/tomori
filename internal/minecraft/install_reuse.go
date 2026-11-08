@@ -3,7 +3,7 @@ package minecraft
 import (
 	"path/filepath"
 
-	"github.com/UruhaLushia/tomori/internal/download"
+	"github.com/UruhaLushia/tomori/internal/network/download"
 )
 
 func (i *Installer) reuseSources(detail *VersionDetail) download.LocalSources {

@@ -7,11 +7,11 @@ import (
 
 	"github.com/egoist/mygo/ui"
 
-	"github.com/egoist/mygo/i18n"
 	"github.com/UruhaLushia/tomori/internal/kit"
 	"github.com/UruhaLushia/tomori/internal/resource"
 	"github.com/UruhaLushia/tomori/internal/resourcecatalog"
 	"github.com/UruhaLushia/tomori/locales"
+	"github.com/egoist/mygo/i18n"
 )
 
 func (p *Resources) online(c *ui.Context, data *ResourcesData, actions ResourcesActions) {

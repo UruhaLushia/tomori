@@ -9,10 +9,10 @@ import (
 	"reflect"
 	"strings"
 
-	"github.com/UruhaLushia/tomori/internal/download"
 	"github.com/UruhaLushia/tomori/internal/fsutil"
 	"github.com/UruhaLushia/tomori/internal/minecraft"
 	"github.com/UruhaLushia/tomori/internal/modpack"
+	"github.com/UruhaLushia/tomori/internal/network/download"
 	"github.com/UruhaLushia/tomori/internal/packcatalog"
 	"github.com/UruhaLushia/tomori/internal/storage"
 	"github.com/UruhaLushia/tomori/locales"
@@ -35,7 +35,7 @@ func associationSource(v packcatalog.Version) (minecraft.PackSource, error) {
 }
 
 func (s *Service) ResolvePackReference(ctx context.Context, link string) (packcatalog.Version, []packcatalog.Version, error) {
-	v, versions, err := (packcatalog.Client{Fetcher: s.client}).ResolveReference(ctx, link)
+	v, versions, err := (packcatalog.Client{Fetcher: s.http}).ResolveReference(ctx, link)
 	if err != nil {
 		return v, nil, err
 	}
@@ -175,7 +175,7 @@ func (s *Service) AssociatePack(ctx context.Context, instance minecraft.Instance
 	if request.Path != "" && request.Version.SHA1 == "" && request.Version.SHA512 == "" {
 		return empty, errors.New(locales.ThisVersionHasNoFileChecksums())
 	}
-	files, err := modpack.Resolve(ctx, s.client, a.Info, modpack.CurseForgeKey(s.cfg.Download.CurseForgeKey), request.Optional)
+	files, err := modpack.Resolve(ctx, s.http, a.Info, modpack.CurseForgeKey(s.cfg.Download.CurseForgeKey), request.Optional)
 	if err != nil {
 		return empty, err
 	}

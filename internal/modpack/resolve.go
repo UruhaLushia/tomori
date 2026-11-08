@@ -11,7 +11,7 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/UruhaLushia/tomori/internal/download"
+	httpclient "github.com/UruhaLushia/tomori/internal/network/http"
 	"github.com/UruhaLushia/tomori/locales"
 )
 
@@ -25,7 +25,7 @@ func (e *MissingFilesError) Error() string {
 	return fmt.Sprintf(locales.FilesRequireManualDownload(), len(e.Files))
 }
 
-func Resolve(ctx context.Context, fetcher *download.Client, info Info, key string, optional bool) ([]File, error) {
+func Resolve(ctx context.Context, fetcher *httpclient.Client, info Info, key string, optional bool) ([]File, error) {
 	var files []File
 	var ids []int64
 	wanted := make(map[int64]File)

@@ -1,8 +1,8 @@
 package app
 
 import (
-	"github.com/UruhaLushia/tomori/internal/download"
 	"github.com/UruhaLushia/tomori/internal/launcher"
+	"github.com/UruhaLushia/tomori/internal/network/download"
 )
 
 func (a *app) newService() *launcher.Service {

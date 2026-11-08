@@ -12,8 +12,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/UruhaLushia/tomori/internal/download"
-	"github.com/UruhaLushia/tomori/internal/network"
+	"github.com/UruhaLushia/tomori/internal/network/download"
+	httpclient "github.com/UruhaLushia/tomori/internal/network/http"
+	"github.com/UruhaLushia/tomori/internal/network/proxy"
 	"github.com/UruhaLushia/tomori/locales"
 )
 
@@ -22,17 +23,14 @@ import (
 var DefaultClientID = "78432422-b913-4a45-ba48-3f6699f1e6f3"
 
 type Client struct {
-	http   *http.Client
+	http   *httpclient.Client
 	budget *download.Budget
 }
 
-func NewClient(proxy network.Proxy, budgets ...*download.Budget) *Client {
-	c := &Client{http: &http.Client{
-		Transport: network.Transport(proxy),
-		Timeout:   30 * time.Second,
-		// Authentication credentials must never follow a server redirect.
-		CheckRedirect: func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse },
-	}}
+func NewClient(proxy proxy.Proxy, budgets ...*download.Budget) *Client {
+	c := &Client{http: httpclient.New(proxy, 30*time.Second)}
+	// Authentication credentials must never follow a server redirect.
+	c.http.CheckRedirect = func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse }
 	if len(budgets) > 0 {
 		c.budget = budgets[0]
 	}

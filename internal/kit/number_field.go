@@ -9,10 +9,10 @@ import (
 )
 
 type numberFieldState struct {
-	text           string
-	model          int
+	text                    string
+	model                   int
 	ready, focused, pending bool
-	handle         ui.Handle
+	handle                  ui.Handle
 }
 
 // NumberField commits on Enter, blur, or a focused step with the keyboard or wheel.
