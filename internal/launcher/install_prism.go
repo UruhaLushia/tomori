@@ -7,7 +7,9 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
+	"github.com/UruhaLushia/tomori/internal/fsutil"
 	"github.com/UruhaLushia/tomori/internal/java"
 	"github.com/UruhaLushia/tomori/internal/minecraft"
 	"github.com/UruhaLushia/tomori/internal/modpack"
@@ -55,19 +57,34 @@ func (s *Service) installPrism(ctx context.Context, parent string, v minecraft.V
 		return minecraft.Instance{}, err
 	}
 	defer func() { _ = os.RemoveAll(stage) }()
-	if _, err := s.installPrismStage(ctx, stage, v.ID, v.ID, nil, progress); err != nil {
+	if _, err := s.installPrismStage(ctx, stage, v.ID, v.ID, nil, nil, nil, progress); err != nil {
 		return minecraft.Instance{}, err
 	}
 	return publishPrism(ctx, stage, parent)
 }
 
-func (s *Service) installPrismStage(ctx context.Context, stage, name, game string, loaders []modpack.Loader, progress func(minecraft.Progress)) (*minecraft.VersionDetail, error) {
-	components, err := prismComponents(loaders)
-	if err != nil {
-		return nil, err
+func (s *Service) installPrismStage(ctx context.Context, stage, name, game string, loaders []modpack.Loader, prismPack []minecraft.PrismComponent, patches map[string][]byte, progress func(minecraft.Progress)) (*minecraft.VersionDetail, error) {
+	components := prismPack
+	if len(components) == 0 {
+		var err error
+		components, err = prismComponents(loaders)
+		if err != nil {
+			return nil, err
+		}
 	}
 	if err := minecraft.WritePrismInstance(stage, name, game, components); err != nil {
 		return nil, err
+	}
+	for name, raw := range patches {
+		if filepath.Base(name) != name || !strings.HasSuffix(strings.ToLower(name), ".json") {
+			return nil, fmt.Errorf(locales.InvalidModpackPath(), filepath.Join("patches", name))
+		}
+		if _, err := fsutil.SafePath("patches", name); err != nil {
+			return nil, err
+		}
+		if err := fsutil.WriteAtomic(filepath.Join(stage, "patches", name), raw); err != nil {
+			return nil, err
+		}
 	}
 	instance, err := minecraft.ReadPrismInstance(stage)
 	if err != nil {

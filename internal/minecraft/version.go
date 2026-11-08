@@ -199,7 +199,7 @@ func readLocalVersion(root *os.Root, id string, parents map[string]bool) (*Versi
 		}
 	}
 	if len(patches) > 0 {
-		detail = *applyVersionPatches(&detail, patches)
+		detail = *ApplyVersionPatches(&detail, patches)
 	}
 	if err := detail.Validate(); err != nil {
 		return nil, err

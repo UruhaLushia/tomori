@@ -178,7 +178,7 @@ func (s *Service) PreparePackUpdate(ctx context.Context, instance minecraft.Inst
 	if old := previous.Header.Source; !request.AllowDifferentSource && old.Provider != "" && request.Source.Provider != "" && (old.Provider != request.Source.Provider || old.ProjectID != request.Source.ProjectID) {
 		return nil, errors.New(locales.TheSelectedPackHasADifferentSource())
 	}
-	if instance.Format == minecraft.InstancePrism && a.Profile != nil && len(a.Info.Loaders) == 0 {
+	if instance.Format == minecraft.InstancePrism && a.Profile != nil {
 		return nil, errors.New(locales.ThisModpackHasCustomVersionSettingsChooseARegularGameDirectoryInsteadOfPrism())
 	}
 	p.next, err = modpack.NewOrigin(a.Info, request.Source, identity, request.Optional)

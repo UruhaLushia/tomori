@@ -78,18 +78,20 @@ func (i Info) LoaderLabel() string {
 }
 
 type Archive struct {
-	Info      Info
-	zip       *zip.Reader
-	file      *os.File
-	stamp     os.FileInfo
-	name      string
-	identity  *ArchiveIdentity
-	entries   map[string]*zip.File
-	prefix    string
-	overrides []string
-	Profile   *minecraft.VersionDetail
-	temporary string
-	bundled   map[string]string
+	Info            Info
+	zip             *zip.Reader
+	file            *os.File
+	stamp           os.FileInfo
+	name            string
+	identity        *ArchiveIdentity
+	entries         map[string]*zip.File
+	prefix          string
+	overrides       []string
+	Profile         *minecraft.VersionDetail
+	PrismComponents []minecraft.PrismComponent
+	PrismPatches    map[string][]byte
+	temporary       string
+	bundled         map[string]string
 }
 
 func Open(ctx context.Context, filename string) (_ *Archive, err error) {

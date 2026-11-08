@@ -50,7 +50,7 @@ func (s *Service) InstallWithLoader(ctx context.Context, root string, v minecraf
 	defer func() { _ = os.RemoveAll(stage) }()
 	name := v.ID + " · " + kind.String()
 	if prism {
-		if _, err := s.installPrismStage(ctx, stage, name, v.ID, []modpack.Loader{kind}, progress); err != nil {
+		if _, err := s.installPrismStage(ctx, stage, name, v.ID, []modpack.Loader{kind}, nil, nil, progress); err != nil {
 			return minecraft.Instance{}, err
 		}
 		return publishPrism(ctx, stage, parent)

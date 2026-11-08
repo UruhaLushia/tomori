@@ -101,9 +101,6 @@ func (s *Service) ImportPack(ctx context.Context, request PackImport, progress f
 	if err != nil {
 		return minecraft.Instance{}, err
 	}
-	if prism && a.Profile != nil && len(a.Info.Loaders) == 0 {
-		return minecraft.Instance{}, errors.New(locales.ThisModpackHasCustomVersionSettingsChooseARegularGameDirectoryInsteadOfPrism())
-	}
 	files, err := modpack.Resolve(ctx, s.http, a.Info, modpack.CurseForgeKey(s.cfg.Download.CurseForgeKey), request.Optional)
 	if err != nil {
 		return minecraft.Instance{}, err
@@ -146,7 +143,7 @@ func (s *Service) ImportPack(ctx context.Context, request PackImport, progress f
 	}
 	var detail *minecraft.VersionDetail
 	if prism {
-		detail, err = s.installPrismStage(ctx, stage, name, a.Info.GameVersion, a.Info.Loaders, progress)
+		detail, err = s.installPrismStage(ctx, stage, name, a.Info.GameVersion, a.Info.Loaders, a.PrismComponents, a.PrismPatches, progress)
 		if err != nil {
 			return minecraft.Instance{}, err
 		}
@@ -177,7 +174,9 @@ func (s *Service) ImportPack(ctx context.Context, request PackImport, progress f
 			return minecraft.Instance{}, err
 		}
 		detail = base
-		if len(a.Info.Loaders) > 0 {
+		if a.Profile != nil && len(a.Profile.Patches) > 0 {
+			detail = minecraft.ApplyVersionPatches(base, a.Profile.Patches)
+		} else if len(a.Info.Loaders) > 0 {
 			kind := a.Info.Loaders[0]
 			var javaPath string
 			if kind.ID == "forge" || kind.ID == "neoforge" {

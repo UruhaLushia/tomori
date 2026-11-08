@@ -14,11 +14,23 @@ import (
 	"github.com/UruhaLushia/tomori/locales"
 )
 
-type PrismComponent struct {
+type PrismRequirement struct {
 	UID      string `json:"uid"`
-	Version  string `json:"version"`
-	Order    *int   `json:"order,omitempty"`
-	Disabled bool   `json:"disabled,omitempty"`
+	Equals   string `json:"equals,omitempty"`
+	Suggests string `json:"suggests,omitempty"`
+}
+
+type PrismComponent struct {
+	UID             string             `json:"uid"`
+	Version         string             `json:"version"`
+	DependencyOnly  bool               `json:"dependencyOnly,omitempty"`
+	Important       bool               `json:"important,omitempty"`
+	CachedName      string             `json:"cachedName,omitempty"`
+	CachedVersion   string             `json:"cachedVersion,omitempty"`
+	CachedRequires  []PrismRequirement `json:"cachedRequires,omitempty"`
+	CachedConflicts []PrismRequirement `json:"cachedConflicts,omitempty"`
+	CachedVolatile  bool               `json:"cachedVolatile,omitempty"`
+	Disabled        bool               `json:"disabled,omitempty"`
 }
 
 type PrismPack struct {
@@ -43,6 +55,11 @@ func readPrismPack(root *os.Root) (PrismPack, error) {
 	}
 	if err := json.Unmarshal(raw, &pack); err != nil {
 		return pack, fmt.Errorf(locales.ReadingMmcPackJson(), err)
+	}
+	for index := range pack.Components {
+		if pack.Components[index].Version == "" {
+			pack.Components[index].Version = pack.Components[index].CachedVersion
+		}
 	}
 	return pack, validatePrismPack(pack)
 }

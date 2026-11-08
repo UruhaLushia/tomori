@@ -19,13 +19,15 @@ import (
 
 type prismMetadata struct {
 	UID, Version         string
-	FormatVersion, Order int
+	FormatVersion        int
 	MainJar              minecraft.Library
 	CompatibleJavaMajors []int
-	JVMArgs              []string `json:"+jvmArgs"`
-	Tweakers             []string `json:"+tweakers"`
-	Traits               []string `json:"+traits"`
+	JVMArgs              []string            `json:"+jvmArgs"`
+	Tweakers             []string            `json:"+tweakers"`
+	Traits               []string            `json:"+traits"`
+	Libraries            []minecraft.Library `json:"+libraries"`
 	Requires             []struct{ UID, Equals, Suggests string }
+	MCVersion            string `json:"mcVersion"`
 	detail               minecraft.VersionDetail
 }
 
@@ -40,15 +42,6 @@ func (s *Service) preparePrism(ctx context.Context, instance minecraft.Instance)
 // Use Prism's component profiles and ForgeWrapper so installed files follow
 // the same validation and patching path as a launch from Prism itself.
 func (s *Service) preparePrismPack(ctx context.Context, instance minecraft.Instance, pack minecraft.PrismPack) (string, *minecraft.VersionDetail, error) {
-	patches, err := os.ReadDir(filepath.Join(instance.InstanceDir, "patches"))
-	if err != nil && !errors.Is(err, os.ErrNotExist) {
-		return "", nil, err
-	}
-	for _, patch := range patches {
-		if !patch.IsDir() && strings.EqualFold(filepath.Ext(patch.Name()), ".json") {
-			return "", nil, errors.New(locales.ThisPrismInstanceContainsUnsupportedCustomPatches())
-		}
-	}
 	components := slices.DeleteFunc(slices.Clone(pack.Components), func(c minecraft.PrismComponent) bool { return c.Disabled })
 	versions := make(map[string]string)
 	loaders, lwjgl := 0, 0
@@ -60,8 +53,6 @@ func (s *Service) preparePrismPack(ctx context.Context, instance minecraft.Insta
 			lwjgl++
 		case "net.fabricmc.fabric-loader", "org.quiltmc.quilt-loader", "net.minecraftforge", "net.neoforged":
 			loaders++
-		default:
-			return "", nil, fmt.Errorf(locales.UnsupportedPrismComponent(), component.UID, component.Version)
 		}
 	}
 	if loaders > 1 {
@@ -82,12 +73,9 @@ func (s *Service) preparePrismPack(ctx context.Context, instance minecraft.Insta
 		if component.UID == "net.java" || component.UID == "net.minecraft.java" {
 			continue // Java is selected once by PrepareLaunch.
 		}
-		meta, err := s.prismMetadata(ctx, shared, component)
+		meta, err := s.prismMetadata(ctx, shared, instance.InstanceDir, component)
 		if err != nil {
 			return "", nil, err
-		}
-		if component.Order != nil {
-			meta.Order = *component.Order
 		}
 		for _, required := range meta.Requires {
 			version := versions[required.UID]
@@ -112,7 +100,6 @@ func (s *Service) preparePrismPack(ctx context.Context, instance minecraft.Insta
 		}
 		metadata = append(metadata, *meta)
 	}
-	slices.SortStableFunc(metadata, func(a, b prismMetadata) int { return cmp.Compare(a.Order, b.Order) })
 	detail := &minecraft.VersionDetail{ID: game, Jar: game, MinecraftVersion: game}
 	for _, value := range []string{"-Djava.library.path=${natives_directory}", "-cp", "${classpath}"} {
 		detail.Arguments.JVM = append(detail.Arguments.JVM, minecraft.Argument{Value: minecraft.ArgumentValue{value}})
@@ -121,6 +108,9 @@ func (s *Service) preparePrismPack(ctx context.Context, instance minecraft.Insta
 		meta.detail.CompatibleJavaMajors = slices.Clone(meta.CompatibleJavaMajors)
 		if meta.UID == "net.minecraft" {
 			client, err := meta.MainJar.Artifact()
+			if (err != nil || client == nil || client.URL == "") && meta.detail.Downloads.Client.URL != "" {
+				client, err = &meta.detail.Downloads.Client, nil
+			}
 			if err != nil || client == nil || client.URL == "" || len(client.SHA1) != 40 || len(meta.CompatibleJavaMajors) == 0 {
 				return "", nil, errors.New(locales.MinecraftComponentMetadataIsIncomplete())
 			}
@@ -152,7 +142,7 @@ func (s *Service) preparePrismPack(ctx context.Context, instance minecraft.Insta
 	return filepath.Join(instance.InstanceDir, ".tomori"), detail, nil
 }
 
-func (s *Service) prismMetadata(ctx context.Context, shared string, component minecraft.PrismComponent) (*prismMetadata, error) {
+func (s *Service) prismMetadata(ctx context.Context, shared, instanceDir string, component minecraft.PrismComponent) (*prismMetadata, error) {
 	if err := fsutil.ValidateID(component.UID); err != nil {
 		return nil, err
 	}
@@ -161,14 +151,28 @@ func (s *Service) prismMetadata(ctx context.Context, shared string, component mi
 	}
 	rel := filepath.Join("meta", component.UID, component.Version+".json")
 	var raw []byte
-	if root, err := os.OpenRoot(shared); err == nil {
-		raw, err = fsutil.ReadRootFile(root, rel, 16<<20)
+	local := false
+	if root, err := os.OpenRoot(instanceDir); err == nil {
+		raw, err = fsutil.ReadRootFile(root, filepath.Join("patches", component.UID+".json"), 16<<20)
 		_ = root.Close()
-		if err != nil && !errors.Is(err, os.ErrNotExist) {
+		if err == nil {
+			local = true
+		} else if !errors.Is(err, os.ErrNotExist) {
 			return nil, err
 		}
 	} else if !errors.Is(err, os.ErrNotExist) {
 		return nil, err
+	}
+	if !local {
+		if root, err := os.OpenRoot(shared); err == nil {
+			raw, err = fsutil.ReadRootFile(root, rel, 16<<20)
+			_ = root.Close()
+			if err != nil && !errors.Is(err, os.ErrNotExist) {
+				return nil, err
+			}
+		} else if !errors.Is(err, os.ErrNotExist) {
+			return nil, err
+		}
 	}
 	missing := len(raw) == 0
 	if missing {
@@ -182,12 +186,34 @@ func (s *Service) prismMetadata(ctx context.Context, shared string, component mi
 	if err := json.Unmarshal(raw, &meta); err != nil {
 		return nil, err
 	}
+	if meta.UID == "" {
+		meta.UID = component.UID
+	}
+	if meta.Version == "" {
+		meta.Version = component.Version
+	}
+	if meta.MCVersion != "" {
+		found := false
+		for _, required := range meta.Requires {
+			if required.UID == "net.minecraft" {
+				found = true
+				break
+			}
+		}
+		if !found {
+			meta.Requires = append(meta.Requires, struct{ UID, Equals, Suggests string }{UID: "net.minecraft", Equals: meta.MCVersion})
+		}
+	}
+	if meta.FormatVersion == 0 {
+		meta.FormatVersion = 1
+	}
 	if meta.FormatVersion != 1 || meta.UID != component.UID || meta.Version != component.Version {
 		return nil, fmt.Errorf(locales.PrismComponentMetadataMismatch(), component.UID)
 	}
 	if err := json.Unmarshal(raw, &meta.detail); err != nil {
 		return nil, err
 	}
+	meta.detail.Libraries = append(meta.detail.Libraries, meta.Libraries...)
 	normalizePrismLibraries(meta.detail.Libraries)
 	normalizePrismLibraries(meta.detail.MavenFiles)
 	if missing {

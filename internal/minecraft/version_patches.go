@@ -19,8 +19,13 @@ type VersionPatch struct {
 
 func (p *VersionPatch) UnmarshalJSON(raw []byte) error {
 	var metadata struct {
-		Version  string `json:"version"`
-		Priority *int64 `json:"priority"`
+		Version   string    `json:"version"`
+		Priority  *int64    `json:"priority"`
+		MainJar   Library   `json:"mainJar"`
+		Libraries []Library `json:"+libraries"`
+		JVMArgs   []string  `json:"+jvmArgs"`
+		Tweakers  []string  `json:"+tweakers"`
+		Traits    []string  `json:"+traits"`
 	}
 	if err := json.Unmarshal(raw, &metadata); err != nil {
 		return err
@@ -29,11 +34,33 @@ func (p *VersionPatch) UnmarshalJSON(raw []byte) error {
 	if err := json.Unmarshal(raw, &detail); err != nil {
 		return err
 	}
+	if metadata.MainJar.Name != "" {
+		client, err := metadata.MainJar.Artifact()
+		if err != nil {
+			return err
+		}
+		if client != nil {
+			detail.Downloads.Client = *client
+		}
+	}
+	detail.Libraries = append(detail.Libraries, metadata.Libraries...)
+	for _, value := range metadata.JVMArgs {
+		detail.Arguments.JVM = append(detail.Arguments.JVM, Argument{Value: ArgumentValue{value}})
+	}
+	for _, value := range metadata.Tweakers {
+		detail.Arguments.Game = append(detail.Arguments.Game, Argument{Value: ArgumentValue{"--tweakClass", value}})
+	}
+	if slices.Contains(metadata.Traits, "FirstThreadOnMacOS") {
+		detail.Arguments.JVM = append(detail.Arguments.JVM, Argument{
+			Rules: []Rule{{Action: "allow", OS: &OSRule{Name: "osx"}}},
+			Value: ArgumentValue{"-XstartOnFirstThread"},
+		})
+	}
 	*p = VersionPatch{VersionDetail: detail, Version: metadata.Version, Priority: metadata.Priority}
 	return nil
 }
 
-func applyVersionPatches(base *VersionDetail, patches []VersionPatch) *VersionDetail {
+func ApplyVersionPatches(base *VersionDetail, patches []VersionPatch) *VersionDetail {
 	ordered := slices.Clone(patches)
 	priority := func(p VersionPatch) int64 {
 		if p.Priority != nil {
@@ -43,13 +70,13 @@ func applyVersionPatches(base *VersionDetail, patches []VersionPatch) *VersionDe
 	}
 	slices.SortStableFunc(ordered, func(a, b VersionPatch) int { return cmp.Compare(priority(a), priority(b)) })
 	hasForge := slices.ContainsFunc(ordered, func(p VersionPatch) bool {
-		return p.ID == "forge" || p.ID == "legacyforge" || p.ID == "cleanroom"
+		return p.ID == "forge" || p.ID == "legacyforge" || p.ID == "cleanroom" || p.ID == "net.minecraftforge"
 	})
 	var optifineArgs []Argument
 	for _, patch := range ordered {
 		detail := patch.VersionDetail
 		detail.ID, detail.Jar, detail.InheritsFrom, detail.Patches = "", "", "", nil
-		if patch.ID == "game" && patch.Version != "" {
+		if (patch.ID == "game" || patch.ID == "net.minecraft") && patch.Version != "" {
 			detail.MinecraftVersion = patch.Version
 		}
 		if patch.ID == "optifine" {
@@ -74,6 +101,9 @@ func applyVersionPatches(base *VersionDetail, patches []VersionPatch) *VersionDe
 			detail.Arguments.Game = nil
 		}
 		base = MergeVersion(base, &detail)
+		if patch.ID == "net.minecraft" && base.JavaVersion == nil && len(patch.CompatibleJavaMajors) > 0 {
+			base.JavaVersion = &JavaTarget{MajorVersion: slices.Min(patch.CompatibleJavaMajors)}
+		}
 	}
 	if len(optifineArgs) > 0 {
 		base = MergeVersion(base, &VersionDetail{Arguments: Arguments{Game: optifineArgs}})

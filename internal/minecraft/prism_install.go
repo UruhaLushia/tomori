@@ -6,6 +6,7 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 
 	"github.com/UruhaLushia/tomori/internal/fsutil"
@@ -74,7 +75,12 @@ func WritePrismInstance(path, name, game string, components []PrismComponent) er
 	if err := fsutil.ValidateID(game); err != nil {
 		return err
 	}
-	pack := PrismPack{FormatVersion: 1, Components: append([]PrismComponent{{UID: "net.minecraft", Version: game}}, components...)}
+	pack := PrismPack{FormatVersion: 1, Components: slices.Clone(components)}
+	if index := slices.IndexFunc(pack.Components, func(component PrismComponent) bool { return component.UID == "net.minecraft" }); index >= 0 {
+		pack.Components[index].Version = game
+	} else {
+		pack.Components = append([]PrismComponent{{UID: "net.minecraft", Version: game}}, pack.Components...)
+	}
 	raw, err := json.MarshalIndent(pack, "", "  ")
 	if err != nil {
 		return err
