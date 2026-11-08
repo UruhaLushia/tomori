@@ -61,7 +61,7 @@ func Open() (*Store, error) {
 		return nil, fmt.Errorf(locales.FailedToRecoverSettingsMigration(), err)
 	}
 	s := &Store{Config: defaults(), dir: dir}
-	s.format.Store(uint32(defaultFormat()))
+	s.format.Store(uint32(SQLite))
 	dbExists, err := exists(filepath.Join(dir, SQLite.filename()))
 	if err != nil {
 		return nil, err
@@ -69,9 +69,6 @@ func Open() (*Store, error) {
 	jsonExists, err := exists(filepath.Join(dir, JSON.filename()))
 	if err != nil {
 		return nil, err
-	}
-	if dbExists && !SQLiteAvailable() {
-		return nil, errors.New(locales.SqLiteIsNotSupportedInThisBuildConfigDbWasNotModifiedOpenItWithABuildThatIncludesSqLite())
 	}
 	if dbExists && jsonExists {
 		return nil, errors.New(locales.BothConfigDbAndConfigJsonExistSettingsSourceIsAmbiguous())

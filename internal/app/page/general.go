@@ -113,16 +113,14 @@ func General(c *ui.Context, data GeneralData, actions GeneralActions) {
 			}
 			kit.SettingRow(c, locales.StorageFormat(), "", func() {
 				kit.Label(c, data.Storage.String(), kit.Body).TextColor(kit.Muted)
-				if config.SQLiteAvailable() {
-					label, target := locales.SwitchToJson(), config.JSON
-					if data.Storage == config.JSON {
-						label, target = locales.SwitchToSqLite(), config.SQLite
-					}
-					if data.StorageChanging {
-						label = locales.Migrating()
-					}
-					kit.Button(c, label, func() { actions.Migrate(target) }).Disabled(data.StorageChanging)
+				label, target := locales.SwitchToJson(), config.JSON
+				if data.Storage == config.JSON {
+					label, target = locales.SwitchToSqLite(), config.SQLite
 				}
+				if data.StorageChanging {
+					label = locales.Migrating()
+				}
+				kit.Button(c, label, func() { actions.Migrate(target) }).Disabled(data.StorageChanging)
 			})
 			kit.Divider(c)
 			kit.FormValueRow(c, locales.SettingsFile(), data.ConfigPath, func() {

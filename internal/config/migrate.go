@@ -29,9 +29,6 @@ func (s *Store) Migrate(to Format, cfg Config) error {
 	if !to.valid() {
 		return fmt.Errorf(locales.UnknownSettingsFormat(), to)
 	}
-	if to == SQLite && !SQLiteAvailable() {
-		return errors.New(locales.SqLiteIsNotSupportedInThisBuild())
-	}
 	from := s.Format()
 	if from == to {
 		return nil
