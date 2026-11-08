@@ -133,17 +133,24 @@ func SettingRow(c *ui.Context, label, hint string, control func()) ui.Element {
 type headerFit struct {
 	title, tabs, actions ui.Handle
 	titleW, tabsW, actW  float32
+	locale               string
 	inline               bool
 }
 
 func PageHeader(c *ui.Context, title, count string, tabs, actions func()) ui.Element {
 	fit := ui.Local(ui.Box(c).Absolute().Size(0, 0).PassThrough(), "page-header-fit", func() headerFit { return headerFit{inline: true} })
+	locale := c.Locale()
+	if fit.locale != "" && fit.locale != locale {
+		fit.titleW, fit.tabsW, fit.actW = 0, 0, 0
+		fit.inline = true
+	}
+	fit.locale = locale
 	for _, part := range []struct {
 		handle *ui.Handle
 		width  *float32
 	}{{&fit.title, &fit.titleW}, {&fit.tabs, &fit.tabsW}, {&fit.actions, &fit.actW}} {
 		if w := part.handle.Bounds(c).W; w > 0 {
-			*part.width = w
+			*part.width = max(*part.width, w)
 		}
 	}
 	width, _ := c.Size()

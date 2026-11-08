@@ -2,8 +2,9 @@ package app
 
 import (
 	"fmt"
-	"github.com/egoist/mygo/ui"
 	"strings"
+
+	"github.com/egoist/mygo/ui"
 
 	"github.com/UruhaLushia/tomori/internal/kit"
 	"github.com/UruhaLushia/tomori/internal/minecraft"
@@ -23,37 +24,30 @@ func downloadResourceKind(category string) (resource.Kind, bool) {
 }
 
 func (a *app) downloadCategoryTabs(c *ui.Context) {
-	ui.Row(c).Wrap().MinWidth(0).MaxWidthPercent(100).Gap(4).AlignItems(ui.Center).Children(func() {
-		for _, item := range []struct {
-			category string
-			label    string
-		}{
-			{downloadCategoryGame, locales.GameVersion()},
-			{downloadCategoryPack, locales.Modpack()},
-			{string(resource.Mod), locales.Mods()},
-			{string(resource.ResourcePack), locales.ResourcePacks()},
-			{string(resource.ShaderPack), locales.Shaders()},
-			{string(resource.World), locales.Worlds()},
-			{string(resource.DataPack), locales.DataPacks()},
-		} {
-			c.Key("download-category-" + item.category)
-			kit.NavTab(c, item.label, a.downloadCategory == item.category, func() { a.selectDownloadCategory(item.category) })
-		}
-	})
+	items := make([]kit.ScrollTab, 0, 7)
+	for _, item := range []struct {
+		category string
+		label    string
+	}{
+		{downloadCategoryGame, locales.GameVersion()},
+		{downloadCategoryPack, locales.Modpack()},
+		{string(resource.Mod), locales.Mods()},
+		{string(resource.ResourcePack), locales.ResourcePacks()},
+		{string(resource.ShaderPack), locales.Shaders()},
+		{string(resource.World), locales.Worlds()},
+		{string(resource.DataPack), locales.DataPacks()},
+	} {
+		category := item.category
+		items = append(items, kit.ScrollTab{Label: item.label, Selected: a.downloadCategory == category, OnClick: func() { a.selectDownloadCategory(category) }})
+	}
+	kit.ScrollTabs(c, &a.downloadCategoryStrip, items)
 }
 
 func (a *app) downloadHeader(c *ui.Context) {
-	kit.PageHeader(c, locales.DownloadsPage(), "", func() { a.downloadCategoryTabs(c) }, func() { a.downloadHeaderActions(c) })
-}
-
-func (a *app) downloadHeaderActions(c *ui.Context) {
-	if _, ok := downloadResourceKind(a.downloadCategory); ok && len(a.installedList) > 0 {
-		if a.resources.data.EntriesLoading {
-			kit.PresenceMotion(ui.Spinner(c).Size(16, 16)).Shrink(0)
-		}
-	} else if a.downloadCategory == downloadCategoryPack {
-		kit.Button(c, locales.ImportALocalModpack(), a.openPackImport).Disabled(a.tasksFull() || a.pathBusy)
-	}
+	ui.Row(c).FillWidth().Height(kit.H(40, kit.Heading)).Gap(8).AlignItems(ui.Center).Children(func() {
+		kit.Label(c, locales.DownloadsPage(), kit.Heading).Shrink(0)
+		ui.Box(c).Grow(1).MinWidth(0).Children(func() { a.downloadCategoryTabs(c) })
+	})
 }
 
 func (a *app) selectDownloadCategory(category string) {
@@ -64,6 +58,12 @@ func (a *app) selectDownloadCategory(category string) {
 		a.closeDownloadPackBrowser()
 	}
 	a.downloadCategory = category
+	for i, item := range []string{downloadCategoryGame, downloadCategoryPack, string(resource.Mod), string(resource.ResourcePack), string(resource.ShaderPack), string(resource.World), string(resource.DataPack)} {
+		if item == category {
+			a.downloadCategoryStrip.Reveal(i)
+			break
+		}
+	}
 	if category == downloadCategoryPack {
 		a.openDownloadPackBrowser()
 		return

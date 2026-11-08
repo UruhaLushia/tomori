@@ -94,10 +94,7 @@ type Instances struct {
 	tab                string
 	tabIndex           int
 	tabForward         bool
-	tabScroll          ui.ScrollState
-	tabReveal          bool
-	tabHandles         [len(instanceTabs)]ui.Handle
-	tabDrag            instanceTabDrag
+	tabStrip           kit.ScrollTabsState
 	files              ui.ListState
 	serverList         ui.ListState
 	gallery            ui.GridState
@@ -148,12 +145,10 @@ func (p *Instances) Reveal(key string) { p.revealKey = key }
 func (p *Instances) CloseDetail() {
 	p.detail = false
 	p.worldPath = ""
-	p.tabDrag = instanceTabDrag{}
 }
 
 func (p *Instances) CancelInteractions() {
 	p.reorder.cancel()
-	p.tabDrag = instanceTabDrag{}
 }
 
 func (p *Instances) leaveDetail(actions InstancesActions) {
@@ -174,8 +169,8 @@ func (p *Instances) selectInstance(key string) {
 		p.reorder.cancel()
 		p.worldPath = ""
 		p.selected, p.tab, p.tabIndex = key, "", 0
-		p.tabScroll, p.tabReveal = ui.ScrollState{}, true
-		p.tabDrag = instanceTabDrag{}
+		p.tabStrip = kit.ScrollTabsState{}
+		p.tabStrip.Reveal(0)
 		p.files = ui.ListState{}
 		p.gallery = ui.GridState{}
 	}
@@ -187,7 +182,7 @@ func (p *Instances) OpenRecent(key, path string, server bool) {
 	if server {
 		p.tab, p.tabIndex = "servers", 6
 	}
-	p.tabReveal = true
+	p.tabStrip.Reveal(p.tabIndex)
 	p.worldPath = path
 }
 

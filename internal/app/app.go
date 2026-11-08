@@ -15,6 +15,7 @@ import (
 	"github.com/UruhaLushia/tomori/internal/config"
 	"github.com/UruhaLushia/tomori/internal/download"
 	"github.com/UruhaLushia/tomori/internal/java"
+	"github.com/UruhaLushia/tomori/internal/kit"
 	"github.com/UruhaLushia/tomori/internal/launchrequest"
 	"github.com/UruhaLushia/tomori/internal/logstore"
 	"github.com/UruhaLushia/tomori/internal/minecraft"
@@ -129,6 +130,7 @@ type app struct {
 	sectionScroll ui.ScrollState
 
 	downloadCategory      string
+	downloadCategoryStrip kit.ScrollTabsState
 	downloadVersionQuery  string
 	downloadVersionFilter int
 	downloadVersionsList  ui.ListState
