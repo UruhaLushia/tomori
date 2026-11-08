@@ -141,7 +141,11 @@ func packInstallForm(c *ui.Context, data *PackImportData, actions PackImportActi
 				kit.ProjectIcon(c, data.Icon, 44)
 				ui.Column(c).Grow(1).MinWidth(0).Children(func() {
 					kit.Line(c, kit.MetaLine(data.Info.Name, data.Info.Version), kit.Strong)
-					kit.Line(c, kit.MetaLine(data.Info.GameVersion, data.Info.LoaderLabel(), fmt.Sprintf(locales.Mods2(), len(data.Info.Files))), kit.Caption)
+					modCount := data.Info.ModCount
+					if modCount == 0 {
+						modCount = len(data.Info.Files)
+					}
+					kit.Line(c, kit.MetaLine(data.Info.GameVersion, data.Info.LoaderLabel(), fmt.Sprintf(locales.Mods2(), modCount)), kit.Caption)
 				})
 			})
 			kit.Field(c, locales.InstanceName(), func() {

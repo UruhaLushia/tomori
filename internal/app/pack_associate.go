@@ -151,7 +151,7 @@ func (a *app) inspectAssociation(path string) {
 		var err error
 		if path != "" {
 			preview.Version = v
-			preview.Info, identity, err = service.InspectPack(ctx, path)
+			preview.Info, identity, _, err = service.InspectPack(ctx, path)
 		} else {
 			preview, err = service.PreviewPack(ctx, v)
 		}

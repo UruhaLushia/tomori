@@ -78,7 +78,7 @@ func (s *Service) ImportPack(ctx context.Context, request PackImport, progress f
 			return minecraft.Instance{}, err
 		}
 	}
-	a, identity, err := s.openPack(ctx, request.Path)
+	a, identity, err := s.openPack(ctx, request.Path, true, request.Archive)
 	if err != nil {
 		return minecraft.Instance{}, err
 	}
@@ -138,6 +138,15 @@ func (s *Service) ImportPack(ctx context.Context, request PackImport, progress f
 	}
 	defer func() { _ = os.RemoveAll(stage) }()
 	root := filepath.Join(stage, "minecraft")
+	if len(a.PrismLibraries) > 0 {
+		libraryRoot := filepath.Join(root, "libraries")
+		if prism {
+			libraryRoot = filepath.Join(filepath.Dir(prismParent), "libraries")
+		}
+		if err := a.ExtractPrismLibraries(ctx, libraryRoot); err != nil {
+			return minecraft.Instance{}, err
+		}
+	}
 	if progress != nil {
 		progress(minecraft.Progress{Stage: "prepare"})
 	}
@@ -170,13 +179,16 @@ func (s *Service) ImportPack(ctx context.Context, request PackImport, progress f
 		installer.Isolate = false
 		installer.ReuseRoots = s.installReuseRoots(request.Directory)
 		installer.ClientSources = append([]string{installer.ClientJar(base.ClientID())}, installClientSources(base.ClientID(), installer.ReuseRoots)...)
-		if err := installer.Install(ctx, base); err != nil {
-			return minecraft.Instance{}, err
-		}
 		detail = base
 		if a.Profile != nil && len(a.Profile.Patches) > 0 {
 			detail = minecraft.ApplyVersionPatches(base, a.Profile.Patches)
+			if err := installer.Install(ctx, detail); err != nil {
+				return minecraft.Instance{}, err
+			}
 		} else if len(a.Info.Loaders) > 0 {
+			if err := installer.Install(ctx, base); err != nil {
+				return minecraft.Instance{}, err
+			}
 			kind := a.Info.Loaders[0]
 			var javaPath string
 			if kind.ID == "forge" || kind.ID == "neoforge" {
@@ -194,13 +206,18 @@ func (s *Service) ImportPack(ctx context.Context, request PackImport, progress f
 			if err != nil {
 				return minecraft.Instance{}, err
 			}
+			if detail != base {
+				if err := installer.Install(ctx, detail); err != nil {
+					return minecraft.Instance{}, err
+				}
+			}
 		} else if a.Profile != nil {
 			detail = minecraft.MergeVersion(base, a.Profile)
-		}
-		if detail != base {
 			if err := installer.Install(ctx, detail); err != nil {
 				return minecraft.Instance{}, err
 			}
+		} else if err := installer.Install(ctx, base); err != nil {
+			return minecraft.Instance{}, err
 		}
 	}
 	for index, file := range files {

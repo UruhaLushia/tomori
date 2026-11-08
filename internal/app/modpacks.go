@@ -3,6 +3,7 @@ package app
 import (
 	"context"
 	"errors"
+	"image"
 	"maps"
 	"path/filepath"
 	"slices"
@@ -91,6 +92,7 @@ func (a *app) inspectPackInput(path string, remote *packcatalog.Version, mode, l
 		var preview *launcher.PackPreview
 		var info modpack.Info
 		var identity modpack.ArchiveIdentity
+		var icon image.Image
 		if remote != nil || mode == "url" {
 			var version packcatalog.Version
 			if remote != nil {
@@ -114,7 +116,7 @@ func (a *app) inspectPackInput(path string, remote *packcatalog.Version, mode, l
 				}
 			}
 		} else {
-			info, identity, err = service.InspectPack(ctx, path)
+			info, identity, icon, err = service.InspectPack(ctx, path)
 		}
 		a.win.Update(func() {
 			if a.ctx.Err() != nil || token != p.request || !p.data.Open {
@@ -136,6 +138,12 @@ func (a *app) inspectPackInput(path string, remote *packcatalog.Version, mode, l
 				p.data.Estimate = preview.Version.Size
 			}
 			p.data.Info, p.data.Name, p.data.Description = info, info.Name, info.Description
+			if mode == "local" {
+				p.data.Icon = nil
+				if icon != nil {
+					p.data.Icon = ui.NewBitmap(icon)
+				}
+			}
 		})
 	})
 }

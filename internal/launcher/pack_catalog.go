@@ -49,16 +49,17 @@ func (s *Service) PackOrigin(ctx context.Context, instance minecraft.Instance) (
 	return header, err
 }
 
-func (s *Service) InspectPack(ctx context.Context, path string) (modpack.Info, modpack.ArchiveIdentity, error) {
-	archive, identity, err := s.openPack(ctx, path)
+func (s *Service) InspectPack(ctx context.Context, path string) (modpack.Info, modpack.ArchiveIdentity, image.Image, error) {
+	archive, identity, err := s.openPack(ctx, path, false)
 	if err != nil {
-		return modpack.Info{}, modpack.ArchiveIdentity{}, err
+		return modpack.Info{}, modpack.ArchiveIdentity{}, nil, err
 	}
 	defer archive.Close()
-	return archive.Info, identity, nil
+	icon, _ := archive.Icon(ctx)
+	return archive.Info, identity, icon, nil
 }
 
-func (s *Service) openPack(ctx context.Context, path string) (*modpack.Archive, modpack.ArchiveIdentity, error) {
+func (s *Service) openPack(ctx context.Context, path string, hash bool, expected ...modpack.ArchiveIdentity) (*modpack.Archive, modpack.ArchiveIdentity, error) {
 	release, err := s.client.FilePermit(ctx)
 	if err != nil {
 		return nil, modpack.ArchiveIdentity{}, err
@@ -68,10 +69,17 @@ func (s *Service) openPack(ctx context.Context, path string) (*modpack.Archive, 
 	if err != nil {
 		return nil, modpack.ArchiveIdentity{}, err
 	}
-	identity, err := archive.Identity(ctx)
-	if err != nil {
-		_ = archive.Close()
-		return nil, modpack.ArchiveIdentity{}, err
+	var identity modpack.ArchiveIdentity
+	if !hash {
+		identity = archive.StatIdentity()
+	} else if len(expected) > 0 && archive.IdentityMatches(expected[0]) {
+		identity = expected[0]
+	} else {
+		identity, err = archive.Identity(ctx)
+		if err != nil {
+			_ = archive.Close()
+			return nil, modpack.ArchiveIdentity{}, err
+		}
 	}
 	return archive, identity, nil
 }

@@ -26,9 +26,10 @@ const OriginFile = ".tomori-pack-origin.json"
 const originLimit = 128 << 20
 
 type ArchiveIdentity struct {
-	Name   string `json:"name"`
-	SHA512 string `json:"sha512"`
-	Size   int64  `json:"size"`
+	Name    string `json:"name"`
+	SHA512  string `json:"sha512"`
+	Size    int64  `json:"size"`
+	ModTime int64  `json:"-"`
 }
 
 type InstalledFile struct {

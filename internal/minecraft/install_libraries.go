@@ -33,6 +33,14 @@ func (l Library) Artifact() (*FileRef, error) {
 	if err != nil {
 		return nil, err
 	}
+	if l.Hint == "local" {
+		if l.Filename != "" {
+			path = l.Filename
+		} else {
+			path = filepath.Base(path)
+		}
+		return &FileRef{Path: path, SHA1: l.SHA1, Size: l.Size}, nil
+	}
 	base := l.URL
 	if base == "" {
 		base = "https://libraries.minecraft.net/"
@@ -98,8 +106,11 @@ func (i *Installer) libraryTasks(detail *VersionDetail) (libs, natives []downloa
 		if classifier == "" {
 			continue
 		}
-		ref, ok := l.Downloads.Classifiers[classifier]
-		if !ok || ref.Path == "" {
+		ref, ok, err := l.Classifier(classifier)
+		if err != nil {
+			return nil, nil, err
+		}
+		if !ok {
 			return nil, nil, fmt.Errorf(locales.IsMissingNativeLibrary(), l.Name, classifier)
 		}
 		t, err := task(ref)
@@ -122,8 +133,11 @@ func (i *Installer) extractNatives(ctx context.Context, detail *VersionDetail) e
 			continue
 		}
 		classifier := NativeClassifier(l.Natives, i.Env)
-		ref, ok := l.Downloads.Classifiers[classifier]
-		if !ok || ref.Path == "" {
+		ref, ok, err := l.Classifier(classifier)
+		if err != nil {
+			continue
+		}
+		if !ok {
 			continue
 		}
 		exclude := []string{"META-INF/"}

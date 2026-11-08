@@ -146,7 +146,7 @@ func (s *Service) AssociatePack(ctx context.Context, instance minecraft.Instance
 			return empty, err
 		}
 	}
-	a, identity, err := s.openPack(ctx, path)
+	a, identity, err := s.openPack(ctx, path, true, request.Archive)
 	if err != nil {
 		return empty, err
 	}

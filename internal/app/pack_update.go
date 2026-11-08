@@ -166,7 +166,7 @@ func (a *app) inspectUpdatePack(path string, remote *packcatalog.Version) {
 		var source minecraft.PackSource
 		var err error
 		if path != "" {
-			info, archive, err = service.InspectPack(ctx, path)
+			info, archive, _, err = service.InspectPack(ctx, path)
 		} else {
 			var v packcatalog.Version
 			if remote != nil {

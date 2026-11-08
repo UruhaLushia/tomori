@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"os"
-	"sort"
 	"strings"
 
 	"github.com/UruhaLushia/tomori/internal/fsutil"
@@ -58,28 +57,19 @@ type contentWriter interface {
 }
 
 func (a *Archive) extractRecorded(ctx context.Context, writer contentWriter, progress func(int, int), record func(InstalledFile) error) error {
-	var err error
-	var names []string
-	for name := range a.entries {
-		names = append(names, name)
+	contents, err := a.contentEntries(ctx)
+	if err != nil {
+		return err
 	}
-	sort.Strings(names)
 	done := 0
 	casePaths := make(map[string]string)
-	for _, prefix := range a.overrides {
+	for _, entries := range contents {
 		seen := make(map[string]string)
-		for _, name := range names {
+		for _, entry := range entries {
 			if err := ctx.Err(); err != nil {
 				return err
 			}
-			relative, include, pathErr := a.contentPath(prefix, name)
-			if pathErr != nil {
-				return pathErr
-			}
-			f := a.entries[name]
-			if !include {
-				continue
-			}
+			relative, f := entry.relative, entry.file
 			key := strings.ToLower(relative)
 			if old, exists := casePaths[key]; exists && old != relative {
 				return fmt.Errorf(locales.ModpackPathCaseConflict(), old, relative)
@@ -104,7 +94,7 @@ func (a *Archive) extractRecorded(ctx context.Context, writer contentWriter, pro
 			}
 			done++
 			if progress != nil {
-				progress(done, len(names))
+				progress(done, len(a.names))
 			}
 		}
 	}
@@ -134,20 +124,41 @@ func (a *Archive) contentPath(prefix, name string) (string, bool, error) {
 	return relative, true, validContentPath(relative)
 }
 
+func (a *Archive) contentEntries(ctx context.Context) ([][]archiveContent, error) {
+	if a.contents != nil {
+		return a.contents, nil
+	}
+	contents := make([][]archiveContent, len(a.overrides))
+	for index, prefix := range a.overrides {
+		for _, name := range a.names {
+			if err := ctx.Err(); err != nil {
+				return nil, err
+			}
+			relative, include, err := a.contentPath(prefix, name)
+			if err != nil {
+				return nil, err
+			}
+			if include {
+				contents[index] = append(contents[index], archiveContent{file: a.entries[name], relative: relative})
+			}
+		}
+	}
+	a.contents = contents
+	return contents, nil
+}
+
 func (a *Archive) expandedSize(ctx context.Context) (uint64, error) {
+	contents, err := a.contentEntries(ctx)
+	if err != nil {
+		return 0, err
+	}
 	var size uint64
-	for _, prefix := range a.overrides {
-		for name, file := range a.entries {
+	for _, entries := range contents {
+		for _, entry := range entries {
 			if err := ctx.Err(); err != nil {
 				return 0, err
 			}
-			_, include, err := a.contentPath(prefix, name)
-			if err != nil {
-				return 0, err
-			}
-			if !include {
-				continue
-			}
+			file := entry.file
 			if file.UncompressedSize64 > 4<<30 || size > (64<<30)-file.UncompressedSize64 {
 				return 0, errors.New(locales.ExtractedSizeExceedsTheLimit())
 			}

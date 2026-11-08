@@ -14,6 +14,7 @@ import (
 	"path"
 	"path/filepath"
 	"slices"
+	"sort"
 	"strings"
 	"sync"
 
@@ -44,6 +45,7 @@ type Info struct {
 	Format, Name, Version, Author, Description, GameVersion string
 	Loaders                                                 []Loader
 	Files                                                   []File
+	ModCount                                                int
 	Warnings                                                []string
 	ExpandedSize                                            uint64
 }
@@ -85,13 +87,21 @@ type Archive struct {
 	name            string
 	identity        *ArchiveIdentity
 	entries         map[string]*zip.File
+	names           []string
+	contents        [][]archiveContent
 	prefix          string
 	overrides       []string
 	Profile         *minecraft.VersionDetail
 	PrismComponents []minecraft.PrismComponent
 	PrismPatches    map[string][]byte
+	PrismLibraries  map[string]*zip.File
 	temporary       string
 	bundled         map[string]string
+}
+
+type archiveContent struct {
+	file     *zip.File
+	relative string
 }
 
 func Open(ctx context.Context, filename string) (_ *Archive, err error) {
@@ -156,9 +166,14 @@ func (a *Archive) inspect(ctx context.Context, depth int, nested bool) (*Archive
 		}
 		a.entries[name] = f
 	}
+	a.names = make([]string, 0, len(a.entries))
+	for name := range a.entries {
+		a.names = append(a.names, name)
+	}
+	sort.Strings(a.names)
 	// Prefer manifests at the shallowest common level. A wrapper directory is allowed.
 	var candidates []string
-	for name := range a.entries {
+	for _, name := range a.names {
 		if slices.Contains([]string{"mcbbs.packmeta", "mmc-pack.json", "modrinth.index.json", "manifest.json", "modpack.json"}, path.Base(name)) {
 			candidates = append(candidates, name)
 		}
@@ -343,9 +358,17 @@ func (a *Archive) Identity(ctx context.Context) (ArchiveIdentity, error) {
 		}
 		return ArchiveIdentity{}, errors.New(locales.TheModpackChangedSelectItAgain())
 	}
-	identity := ArchiveIdentity{Name: a.name, SHA512: hex.EncodeToString(h.Sum(nil)), Size: n}
+	identity := ArchiveIdentity{Name: a.name, SHA512: hex.EncodeToString(h.Sum(nil)), Size: n, ModTime: a.stamp.ModTime().UnixNano()}
 	a.identity = &identity
 	return identity, nil
+}
+
+func (a *Archive) StatIdentity() ArchiveIdentity {
+	return ArchiveIdentity{Name: a.name, Size: a.stamp.Size(), ModTime: a.stamp.ModTime().UnixNano()}
+}
+
+func (a *Archive) IdentityMatches(identity ArchiveIdentity) bool {
+	return identity.SHA512 != "" && identity.Size == a.stamp.Size() && identity.ModTime != 0 && identity.ModTime == a.stamp.ModTime().UnixNano()
 }
 
 func (a *Archive) VerifySource(ctx context.Context, size int64, sum, sum512 string) error {

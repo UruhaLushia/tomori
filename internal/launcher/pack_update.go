@@ -161,7 +161,7 @@ func (s *Service) PreparePackUpdate(ctx context.Context, instance minecraft.Inst
 			return nil, err
 		}
 	}
-	a, identity, err := s.openPack(ctx, request.Path)
+	a, identity, err := s.openPack(ctx, request.Path, true, request.Archive)
 	if err != nil {
 		return nil, err
 	}

@@ -70,6 +70,8 @@ type Library struct {
 	URL       string            `json:"url,omitempty"`
 	SHA1      string            `json:"sha1,omitempty"`
 	Size      int64             `json:"size,omitempty"`
+	Hint      string            `json:"MMC-hint,omitempty"`
+	Filename  string            `json:"MMC-filename,omitempty"`
 	Downloads LibraryDownloads  `json:"downloads"`
 	Natives   map[string]string `json:"natives"`
 	Rules     []Rule            `json:"rules"`
@@ -147,6 +149,26 @@ func (f FileRef) ID() string {
 		return filepath.Base(f.URL)
 	}
 	return "client"
+}
+
+func (l Library) Classifier(name string) (FileRef, bool, error) {
+	ref, ok := l.Downloads.Classifiers[name]
+	if !ok {
+		return FileRef{}, false, nil
+	}
+	if ref.Path == "" {
+		coordinate, extension, hasExtension := strings.Cut(l.Name, "@")
+		coordinate += ":" + name
+		if hasExtension {
+			coordinate += "@" + extension
+		}
+		path, err := MavenPath(coordinate)
+		if err != nil {
+			return FileRef{}, true, err
+		}
+		ref.Path = path
+	}
+	return ref, true, nil
 }
 
 func ReadLocalVersion(gameDir, id string) (*VersionDetail, error) {
