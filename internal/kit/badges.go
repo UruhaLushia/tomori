@@ -43,20 +43,24 @@ func Badge(c *ui.Context, text string, tone Tone) ui.Element {
 
 func PlayerAvatar(c *ui.Context, bitmap *ui.Bitmap, initial string, size float32) ui.Element {
 	if bitmap == nil {
-		return imageIcon(c, nil, size, User, locales.PlayerAvatar())
+		return imageIcon(c, nil, nil, size, User, locales.PlayerAvatar())
 	}
-	return imageIcon(c, bitmap, size, User, locales.PlayerAvatar())
+	return imageIcon(c, bitmap, nil, size, User, locales.PlayerAvatar())
 }
 
 func InstanceIcon(c *ui.Context, bitmap *ui.Bitmap, size float32) ui.Element {
-	return imageIcon(c, bitmap, size, Cube, locales.InstanceIcon())
+	return imageIcon(c, bitmap, nil, size, Cube, locales.InstanceIcon())
 }
 
-func ProjectIcon(c *ui.Context, bitmap *ui.Bitmap, size float32) ui.Element {
-	return imageIcon(c, bitmap, size, Cube, locales.ProjectIcon())
+func ProjectIcon(c *ui.Context, bitmap *ui.Bitmap, size float32, video ...*ui.VideoPlayer) ui.Element {
+	var player *ui.VideoPlayer
+	if len(video) > 0 {
+		player = video[0]
+	}
+	return imageIcon(c, bitmap, player, size, Cube, locales.ProjectIcon())
 }
 
-func imageIcon(c *ui.Context, bitmap *ui.Bitmap, size float32, icon *ui.SVG, label string) ui.Element {
+func imageIcon(c *ui.Context, bitmap *ui.Bitmap, video *ui.VideoPlayer, size float32, icon *ui.SVG, label string) ui.Element {
 	radius := RadiusM
 	if size <= 32 {
 		radius = RadiusS
@@ -66,7 +70,9 @@ func imageIcon(c *ui.Context, bitmap *ui.Bitmap, size float32, icon *ui.SVG, lab
 	}
 	box := ui.Box(c).Size(size, size).Shrink(0).Radius(radius).Clip().Background(InsetColor).Label(label)
 	box.Children(func() {
-		if bitmap != nil {
+		if video != nil {
+			ui.Video(c, video).Fill().Fit(ui.Cover)
+		} else if bitmap != nil {
 			w, h := bitmap.Size()
 			if max(w, h) <= 64 {
 				bitmap.Pixelated()

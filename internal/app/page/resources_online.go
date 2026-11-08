@@ -64,6 +64,7 @@ func (p *Resources) onlineFullPage(c *ui.Context, data *ResourcesData, actions R
 	}
 	more := count < data.Search.Total
 	c.Key("online-results")
+	visible := make(map[string]struct{})
 	ui.List(c, &p.onlineList, count+1).Grow(1).FillWidth().MinHeight(0).Margin(0, -8).ItemKey(func(i int) any {
 		if i == count {
 			return "online-end"
@@ -76,8 +77,14 @@ func (p *Resources) onlineFullPage(c *ui.Context, data *ResourcesData, actions R
 			return
 		}
 		project := data.Search.Hits[row.Index]
+		visible[project.ID] = struct{}{}
 		installed, number := installedProject(data.Entries, project)
-		kit.ListRow(c, kit.Row{Title: project.DisplayName(), Subtitle: project.DisplayDescription(), Lead: func() { kit.ProjectIcon(c, data.Icons[project.ID], 32) }, Badge: func() {
+		kit.ListRow(c, kit.Row{Title: project.DisplayName(), Subtitle: project.DisplayDescription(), Lead: func() {
+			if actions.EnsureVideo != nil {
+				actions.EnsureVideo(project.ID)
+			}
+			kit.ProjectIcon(c, data.Icons[project.ID], 32, data.Videos[project.ID])
+		}, Badge: func() {
 			if project.Author != "" {
 				kit.Line(c, project.Author, kit.Caption).MinWidth(0).Shrink(100)
 			}
@@ -97,6 +104,9 @@ func (p *Resources) onlineFullPage(c *ui.Context, data *ResourcesData, actions R
 			}
 		})
 	})
+	if actions.ReleaseVideos != nil {
+		actions.ReleaseVideos(visible)
+	}
 	if !data.Loading && data.Error == "" && more && kit.NearListEnd(c, &p.onlineList, count) {
 		actions.Search(data.Query, data.Search.Offset+resourcecatalog.PageSize)
 	}
@@ -200,7 +210,7 @@ func (p *Resources) versionsFullPage(c *ui.Context, data *ResourcesData, actions
 	services := c.Services()
 	ui.Column(c).FillWidth().Shrink(0).Gap(12).Children(func() {
 		kit.BackBar(c, data.Kind.Label(), actions.Back, nil)
-		kit.IdentityHeader(c, kit.Identity{Icon: data.Icons[project.ID], Name: project.DisplayName(), Meta: kit.MetaLine(project.Author, downloadCount(project.Downloads)+" "+locales.Downloads6())}, nil, func() {
+		kit.IdentityHeader(c, kit.Identity{Icon: data.Icons[project.ID], Video: data.Videos[project.ID], Name: project.DisplayName(), Meta: kit.MetaLine(project.Author, downloadCount(project.Downloads)+" "+locales.Downloads6())}, nil, func() {
 			if project.Website != "" {
 				kit.IconButton(c, kit.External, false, func() { services.OpenURL(project.Website) }).Label(locales.OpenProjectWebsite())
 			}

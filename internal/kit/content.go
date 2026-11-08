@@ -43,6 +43,7 @@ func TaskIndicator(c *ui.Context, fraction float64, active, failure bool, onClic
 
 type Identity struct {
 	Icon         *ui.Bitmap
+	Video        *ui.VideoPlayer
 	Name, Meta   string
 	Switch, Open bool
 }
@@ -59,7 +60,7 @@ func IdentityHeader(c *ui.Context, id Identity, onToggle func(), actions func())
 			trigger = ui.Row(c).Grow(1).Basis(0).MinWidth(0).Gap(12).AlignItems(ui.Center)
 		}
 		trigger.Children(func() {
-			InstanceIcon(c, id.Icon, 44)
+			imageIcon(c, id.Icon, id.Video, 44, Cube, locales.InstanceIcon())
 			ui.Column(c).Grow(1).Basis(0).MinWidth(0).Gap(4).Children(func() {
 				ui.Row(c).FillWidth().MinWidth(0).Gap(4).AlignItems(ui.Center).Children(func() {
 					Line(c, id.Name, Heading).Shrink(1).Tooltip(id.Name).ContentTransition(ValueMotion)

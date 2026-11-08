@@ -14,6 +14,7 @@ import (
 
 	"github.com/UruhaLushia/tomori/internal/app/page"
 	"github.com/UruhaLushia/tomori/internal/instancecontent"
+	"github.com/UruhaLushia/tomori/internal/kit"
 	"github.com/UruhaLushia/tomori/internal/launcher"
 	"github.com/UruhaLushia/tomori/internal/minecraft"
 	"github.com/UruhaLushia/tomori/internal/resource"
@@ -33,6 +34,34 @@ type resourceState struct {
 	retryPolicy    resource.InstallPolicy
 	retryUpdates   []resourcecatalog.ResourceUpdate
 	supplementTask uint64
+}
+
+func (a *app) ensureResourceVideo(id string) {
+	r := &a.resources.data
+	if len(r.Animations[id]) == 0 {
+		return
+	}
+	if r.Videos == nil {
+		r.Videos = make(map[string]*ui.VideoPlayer)
+	}
+	if r.Videos[id] != nil {
+		return
+	}
+	video, err := kit.AnimatedVideo(r.Animations[id])
+	if err == nil {
+		r.Videos[id] = video
+	}
+}
+
+func (a *app) releaseResourceVideos(keep map[string]struct{}) {
+	r := &a.resources.data
+	for id, video := range r.Videos {
+		if _, ok := keep[id]; ok {
+			continue
+		}
+		video.Close()
+		delete(r.Videos, id)
+	}
 }
 
 func (a *app) openInstanceResources(key string, kind resource.Kind, embedded bool) {
@@ -85,6 +114,9 @@ func (a *app) openWorldPacks(file instancecontent.File) {
 func (a *app) closeResources() {
 	a.closeMissingResources()
 	r := &a.resources
+	for _, video := range r.data.Videos {
+		video.Close()
+	}
 	if r.cancel != nil {
 		r.cancel()
 		r.cancel = nil
@@ -308,9 +340,14 @@ func (a *app) searchResources(query string, offset int) {
 					r.data.Search.Total = len(r.data.Search.Hits)
 				}
 			} else {
+				for _, video := range r.data.Videos {
+					video.Close()
+				}
 				r.data.Search = result
 				r.data.SearchRevision++
 				r.data.Icons = make(map[string]*ui.Bitmap)
+				r.data.Animations = make(map[string][]byte)
+				r.data.Videos = make(map[string]*ui.VideoPlayer)
 			}
 		})
 		if err != nil {
@@ -351,13 +388,16 @@ func (a *app) searchResources(query string, offset int) {
 					if err != nil {
 						continue
 					}
-					bitmap := ui.NewBitmap(cover)
+					bitmap := ui.NewBitmap(cover.Image)
 					a.win.Update(func() {
 						if token == a.resources.request && a.resources.data.Open && a.ctx.Err() == nil {
 							if a.resources.data.Icons == nil {
 								a.resources.data.Icons = make(map[string]*ui.Bitmap)
 							}
 							a.resources.data.Icons[project.ID] = bitmap
+							if len(cover.Animation) > 0 {
+								storeAnimation(a.resources.data.Animations, project.ID, cover.Animation)
+							}
 						}
 					})
 				}
@@ -372,6 +412,7 @@ func (a *app) resourceVersions(project resourcecatalog.Project) {
 	if !r.data.Open || project.Source != r.data.Source {
 		return
 	}
+	a.ensureResourceVideo(project.ID)
 	r.data.Project, r.data.Versions = &project, nil
 	ctx, token := a.resourceContext(time.Minute)
 	cancel := r.cancel
@@ -380,6 +421,30 @@ func (a *app) resourceVersions(project resourcecatalog.Project) {
 	a.workers.Go(func() {
 		defer cancel()
 		defer service.Close()
+		if project.IconURL != "" {
+			if cover, coverErr := service.PackCover(ctx, project.IconURL); coverErr == nil {
+				bitmap := ui.NewBitmap(cover.Image)
+				a.win.Update(func() {
+					if token != a.resources.request || !a.resources.data.Open || a.ctx.Err() != nil {
+						return
+					}
+					if a.resources.data.Icons == nil {
+						a.resources.data.Icons = make(map[string]*ui.Bitmap)
+					}
+					a.resources.data.Icons[project.ID] = bitmap
+					if len(cover.Animation) > 0 {
+						if a.resources.data.Animations == nil {
+							a.resources.data.Animations = make(map[string][]byte)
+						}
+						storeAnimation(a.resources.data.Animations, project.ID, cover.Animation)
+						if a.resources.data.Videos == nil {
+							a.resources.data.Videos = make(map[string]*ui.VideoPlayer)
+						}
+						a.ensureResourceVideo(project.ID)
+					}
+				})
+			}
+		}
 		versions, err := service.ResourceVersions(ctx, kind, project)
 		a.win.Update(func() {
 			if token != a.resources.request || !a.resources.data.Open || a.ctx.Err() != nil {
@@ -399,6 +464,10 @@ func (a *app) resourceVersions(project resourcecatalog.Project) {
 func (a *app) backResourceSearch() {
 	a.closeMissingResources()
 	r := &a.resources
+	for _, video := range r.data.Videos {
+		video.Close()
+	}
+	r.data.Videos = make(map[string]*ui.VideoPlayer)
 	if r.cancel != nil {
 		r.cancel()
 	}
@@ -649,6 +718,7 @@ func (a *app) resourceActions() page.ResourcesActions {
 			}
 		},
 		Change: a.changeResources, Search: a.searchResources, Versions: a.resourceVersions, Back: a.backResourceSearch,
+		EnsureVideo: a.ensureResourceVideo, ReleaseVideos: a.releaseResourceVideos,
 		SourceChanged: a.changeResourceSource, CategoryChanged: a.changeResourceCategory,
 		Origin:  a.openResourceOrigin,
 		Install: a.installResource, Toggle: a.toggleResources, Remove: a.removeResources,

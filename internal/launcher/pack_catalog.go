@@ -159,16 +159,22 @@ func (s *Service) FetchPack(ctx context.Context, v packcatalog.Version, progress
 	}
 	return path, nil
 }
-func (s *Service) PackCover(ctx context.Context, raw string) (image.Image, error) {
+
+type PackCover struct {
+	Image     image.Image
+	Animation []byte
+}
+
+func (s *Service) PackCover(ctx context.Context, raw string) (PackCover, error) {
 	path := cache.FileIn(s.cacheDir, "images", raw)
 	var lastErr error
 	for range 2 {
 		if err := s.client.Fetch(ctx, download.Task{URL: raw, Path: path, MaxSize: 8 << 20}); err != nil {
-			return nil, err
+			return PackCover{}, err
 		}
 		release, err := s.client.FilePermit(ctx)
 		if err != nil {
-			return nil, err
+			return PackCover{}, err
 		}
 		f, err := fsutil.OpenRegular(path)
 		if err == nil {
@@ -177,7 +183,8 @@ func (s *Service) PackCover(ctx context.Context, raw string) (image.Image, error
 			release()
 			if readErr == nil {
 				if icon, decodeErr := minecraft.DecodeInstanceIcon(data); decodeErr == nil {
-					return icon, nil
+					animation, _ := minecraft.AnimatedIcon(data)
+					return PackCover{Image: icon, Animation: animation}, nil
 				} else {
 					lastErr = decodeErr
 				}
@@ -186,9 +193,9 @@ func (s *Service) PackCover(ctx context.Context, raw string) (image.Image, error
 			}
 		} else {
 			release()
-			return nil, err
+			return PackCover{}, err
 		}
 		_ = os.Remove(path)
 	}
-	return nil, lastErr
+	return PackCover{}, lastErr
 }

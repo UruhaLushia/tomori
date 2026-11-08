@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/egoist/mygo/ui"
+
 	"github.com/UruhaLushia/tomori/internal/kit"
 	"github.com/UruhaLushia/tomori/internal/packcatalog"
 	"github.com/UruhaLushia/tomori/locales"
@@ -22,6 +23,8 @@ type PackBrowserData struct {
 	Project                 *packcatalog.Project
 	Versions                []packcatalog.Version
 	Icons                   map[string]*ui.Bitmap
+	Animations              map[string][]byte
+	Videos                  map[string]*ui.VideoPlayer
 	InstallStatus           func(string) kit.InstallProgress
 }
 type PackBrowserActions struct {
@@ -30,6 +33,8 @@ type PackBrowserActions struct {
 	Page                               func(int)
 	Versions                           func(packcatalog.Project)
 	Choose                             func(packcatalog.Version)
+	EnsureVideo                        func(string)
+	ReleaseVideos                      func(map[string]struct{})
 }
 type PackBrowser struct {
 	list, versionList     ui.ListState
@@ -81,6 +86,7 @@ func (p *PackBrowser) body(c *ui.Context, d *PackBrowserData, a PackBrowserActio
 	}
 	more := count < d.Result.Total
 	c.Key("pack-results")
+	visible := make(map[string]struct{})
 	ui.List(c, &p.list, count+1).Grow(1).FillWidth().MinHeight(0).Margin(0, -8).ItemKey(func(i int) any {
 		if i == count {
 			return "pack-end"
@@ -93,7 +99,13 @@ func (p *PackBrowser) body(c *ui.Context, d *PackBrowserData, a PackBrowserActio
 			return
 		}
 		project := d.Result.Projects[row.Index]
-		kit.ListRow(c, kit.Row{Title: project.Name, Subtitle: project.Description, Tags: strings.Join(project.Categories, " · "), Lead: func() { kit.ProjectIcon(c, d.Icons[project.ID], 32) }, OnClick: func() { a.Versions(project) }}, func(bool) {
+		visible[project.ID] = struct{}{}
+		kit.ListRow(c, kit.Row{Title: project.Name, Subtitle: project.Description, Tags: strings.Join(project.Categories, " · "), Lead: func() {
+			if a.EnsureVideo != nil {
+				a.EnsureVideo(project.ID)
+			}
+			kit.ProjectIcon(c, d.Icons[project.ID], 32, d.Videos[project.ID])
+		}, OnClick: func() { a.Versions(project) }}, func(bool) {
 			if !kit.Compact(c) {
 				ui.Column(c).Width(kit.W(120)).Shrink(0).AlignItems(ui.End).Children(func() {
 					kit.Line(c, downloadCount(project.Downloads)+" "+locales.Downloads6(), kit.Caption)
@@ -101,6 +113,9 @@ func (p *PackBrowser) body(c *ui.Context, d *PackBrowserData, a PackBrowserActio
 			}
 		})
 	})
+	if a.ReleaseVideos != nil {
+		a.ReleaseVideos(visible)
+	}
 	if !d.Loading && d.Error == "" && more && kit.NearListEnd(c, &p.list, count) {
 		a.Page(d.Result.Offset + packcatalog.PageSize)
 	}
@@ -137,7 +152,7 @@ func (p *PackBrowser) detail(c *ui.Context, d *PackBrowserData, a PackBrowserAct
 	services := c.Services()
 	ui.Column(c).FillWidth().Shrink(0).Gap(12).Children(func() {
 		kit.BackBar(c, locales.Modpack(), a.Back, nil)
-		kit.IdentityHeader(c, kit.Identity{Icon: d.Icons[d.Project.ID], Name: d.Project.Name, Meta: kit.MetaLine(d.Project.Author, downloadCount(d.Project.Downloads)+" "+locales.Downloads6())}, nil, func() {
+		kit.IdentityHeader(c, kit.Identity{Icon: d.Icons[d.Project.ID], Video: d.Videos[d.Project.ID], Name: d.Project.Name, Meta: kit.MetaLine(d.Project.Author, downloadCount(d.Project.Downloads)+" "+locales.Downloads6())}, nil, func() {
 			if d.Project.Website != "" {
 				kit.IconButton(c, kit.External, false, func() { services.OpenURL(d.Project.Website) }).Label(locales.OpenModpackWebsite())
 			}

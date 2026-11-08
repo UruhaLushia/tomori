@@ -241,7 +241,7 @@ func (s *Service) ImportPack(ctx context.Context, request PackImport, progress f
 		if _, err := os.Stat(filepath.Join(stage, "icon.png")); os.IsNotExist(err) {
 			if icon, err := s.PackCover(ctx, request.IconURL); err == nil {
 				var image bytes.Buffer
-				if err := png.Encode(&image, icon); err == nil {
+				if err := png.Encode(&image, icon.Image); err == nil {
 					_ = fsutil.WriteAtomic(filepath.Join(stage, "icon.png"), image.Bytes())
 				}
 			}

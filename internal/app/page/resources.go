@@ -30,6 +30,8 @@ type ResourcesData struct {
 	SearchOffset                                                    int
 	SearchRevision                                                  uint64
 	Icons                                                           map[string]*ui.Bitmap
+	Animations                                                      map[string][]byte
+	Videos                                                          map[string]*ui.VideoPlayer
 	Project                                                         *resourcecatalog.Project
 	Versions                                                        []resourcecatalog.Version
 	Missing                                                         []resourcecatalog.MissingFile
@@ -58,6 +60,8 @@ type ResourcesActions struct {
 	Toggle                                               func([]resource.Entry, bool)
 	Remove                                               func([]resource.Entry)
 	Origin                                               func(resource.Entry, resource.Origin)
+	EnsureVideo                                          func(string)
+	ReleaseVideos                                        func(map[string]struct{})
 	OpenUpdates, CloseUpdates, CheckUpdates, BackUpdates func()
 	Update                                               func([]resourcecatalog.ResourceUpdate)
 	UpdateDetails                                        func(resourcecatalog.ResourceUpdate)

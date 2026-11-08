@@ -8,6 +8,7 @@ import (
 	"github.com/egoist/mygo/ui"
 
 	"github.com/UruhaLushia/tomori/internal/app/page"
+	"github.com/UruhaLushia/tomori/internal/kit"
 	"github.com/UruhaLushia/tomori/internal/packcatalog"
 )
 
@@ -15,6 +16,34 @@ type packBrowserState struct {
 	data    page.PackBrowserData
 	request uint64
 	cancel  context.CancelFunc
+}
+
+func (a *app) ensurePackVideo(id string) {
+	p := &a.packBrowser.data
+	if len(p.Animations[id]) == 0 {
+		return
+	}
+	if p.Videos == nil {
+		p.Videos = make(map[string]*ui.VideoPlayer)
+	}
+	if p.Videos[id] != nil {
+		return
+	}
+	video, err := kit.AnimatedVideo(p.Animations[id])
+	if err == nil {
+		p.Videos[id] = video
+	}
+}
+
+func (a *app) releasePackVideos(keep map[string]struct{}) {
+	p := &a.packBrowser.data
+	for id, video := range p.Videos {
+		if _, ok := keep[id]; ok {
+			continue
+		}
+		video.Close()
+		delete(p.Videos, id)
+	}
 }
 
 func (a *app) cancelPackBrowser() {
@@ -76,8 +105,14 @@ func (a *app) packBrowserActions(fullPage bool) page.PackBrowserActions {
 		Import:        a.openPackImport,
 		Page:          a.searchPacks,
 		Versions:      a.packVersions,
+		EnsureVideo:   a.ensurePackVideo,
+		ReleaseVideos: a.releasePackVideos,
 		Back: func() {
 			a.cancelPackBrowser()
+			for _, video := range a.packBrowser.data.Videos {
+				video.Close()
+			}
+			a.packBrowser.data.Videos = make(map[string]*ui.VideoPlayer)
 			a.packBrowser.data.Project = nil
 			a.packBrowser.data.Loading = false
 			a.packBrowser.data.Error = ""
@@ -100,8 +135,11 @@ func (a *app) backFromPackBrowser() {
 
 func (a *app) releasePackBrowserResults() {
 	p := &a.packBrowser.data
+	for _, video := range p.Videos {
+		video.Close()
+	}
 	p.Result = packcatalog.Result{}
-	p.Project, p.Versions, p.Icons, p.Games = nil, nil, nil, nil
+	p.Project, p.Versions, p.Icons, p.Animations, p.Videos, p.Games = nil, nil, nil, nil, nil, nil
 }
 func (a *app) packSourceChanged() {
 	p := &a.packBrowser.data
@@ -163,9 +201,14 @@ func (a *app) searchPacks(offset int) {
 					p.data.Result.Total = len(p.data.Result.Projects)
 				}
 			} else {
+				for _, video := range p.data.Videos {
+					video.Close()
+				}
 				p.data.Result = result
 				p.data.Revision++
 				p.data.Icons = make(map[string]*ui.Bitmap)
+				p.data.Animations = make(map[string][]byte)
+				p.data.Videos = make(map[string]*ui.VideoPlayer)
 			}
 			if categories != nil {
 				p.data.Categories = categories
@@ -193,10 +236,13 @@ func (a *app) searchPacks(offset int) {
 					if err != nil {
 						continue
 					}
-					bitmap := ui.NewBitmap(cover)
+					bitmap := ui.NewBitmap(cover.Image)
 					a.win.Update(func() {
 						if token == p.request && p.data.Open && a.ctx.Err() == nil {
 							p.data.Icons[project.ID] = bitmap
+							if len(cover.Animation) > 0 {
+								storeAnimation(p.data.Animations, project.ID, cover.Animation)
+							}
 						}
 					})
 				}
@@ -210,6 +256,7 @@ func (a *app) packVersions(project packcatalog.Project) {
 	if !p.data.Open {
 		return
 	}
+	a.ensurePackVideo(project.ID)
 	ctx, cancel, token := a.packBrowserContext()
 	p.data.Project = &project
 	p.data.Versions = nil
@@ -218,6 +265,30 @@ func (a *app) packVersions(project packcatalog.Project) {
 	a.workers.Go(func() {
 		defer cancel()
 		defer service.Close()
+		if project.IconURL != "" {
+			if cover, coverErr := service.PackCover(ctx, project.IconURL); coverErr == nil {
+				bitmap := ui.NewBitmap(cover.Image)
+				a.win.Update(func() {
+					if token != p.request || !p.data.Open || a.ctx.Err() != nil {
+						return
+					}
+					if p.data.Icons == nil {
+						p.data.Icons = make(map[string]*ui.Bitmap)
+					}
+					p.data.Icons[project.ID] = bitmap
+					if len(cover.Animation) > 0 {
+						if p.data.Animations == nil {
+							p.data.Animations = make(map[string][]byte)
+						}
+						storeAnimation(p.data.Animations, project.ID, cover.Animation)
+						if p.data.Videos == nil {
+							p.data.Videos = make(map[string]*ui.VideoPlayer)
+						}
+						a.ensurePackVideo(project.ID)
+					}
+				})
+			}
+		}
 		versions, err := service.PackVersions(ctx, source, project.ID, game)
 		a.win.Update(func() {
 			if token != p.request || a.ctx.Err() != nil || !p.data.Open {
