@@ -78,6 +78,11 @@ func MergeVersion(base, child *VersionDetail) *VersionDetail {
 	// Preserve variants until the Java platform is known. The same native
 	// coordinate can supply different OS classifiers without explicit rules.
 	v.Libraries = slices.Concat(child.Libraries, base.Libraries)
+	isLwjgl3 := func(library Library) bool { return strings.HasPrefix(library.Name, "org.lwjgl:") }
+	isLwjgl2 := func(library Library) bool { return strings.HasPrefix(library.Name, "org.lwjgl.lwjgl:") }
+	if slices.ContainsFunc(v.Libraries, isLwjgl3) {
+		v.Libraries = slices.DeleteFunc(v.Libraries, isLwjgl2)
+	}
 	return &v
 }
 
