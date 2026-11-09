@@ -7,7 +7,7 @@ tool github.com/egoist/mygo/cmd/mygo
 require (
 	github.com/UruhaLushia/piko v0.1.6-0.20261017013246-4a39a62d0418
 	github.com/ebitengine/purego v0.11.3
-	github.com/egoist/mygo v0.8.1
+	github.com/egoist/mygo v0.8.4-0.20261108220316-c4197b7fe562
 	github.com/glebarez/sqlite v1.11.0
 	github.com/pelletier/go-toml/v2 v2.4.3
 	github.com/shirou/gopsutil/v4 v4.26.10
@@ -42,5 +42,5 @@ require (
 	modernc.org/libc v1.80.1 // indirect
 	modernc.org/mathutil v1.7.1 // indirect
 	modernc.org/memory v1.12.1 // indirect
-	modernc.org/sqlite v1.61.1 // indirect
+	modernc.org/sqlite v1.62.0 // indirect
 )
