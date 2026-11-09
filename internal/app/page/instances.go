@@ -97,6 +97,8 @@ type Instances struct {
 	tabStrip           kit.ScrollTabsState
 	files              ui.ListState
 	serverList         ui.ListState
+	serverMembers      int
+	serverMembersOpen  bool
 	gallery            ui.GridState
 	worldPath          string
 	detail             bool
@@ -145,6 +147,7 @@ func (p *Instances) Reveal(key string) { p.revealKey = key }
 func (p *Instances) CloseDetail() {
 	p.detail = false
 	p.worldPath = ""
+	p.serverMembersOpen = false
 }
 
 func (p *Instances) CancelInteractions() {
@@ -173,6 +176,7 @@ func (p *Instances) selectInstance(key string) {
 		p.tabStrip.Reveal(0)
 		p.files = ui.ListState{}
 		p.gallery = ui.GridState{}
+		p.serverMembersOpen = false
 	}
 }
 
@@ -187,6 +191,10 @@ func (p *Instances) OpenRecent(key, path string, server bool) {
 }
 
 func (p *Instances) ServersOpen() bool { return p.detail && p.tab == "servers" }
+
+func (p *Instances) ShowServerMembers(index int) {
+	p.serverMembers, p.serverMembersOpen = index, true
+}
 
 func (p *Instances) ResourceKind() resource.Kind {
 	if !p.detail {
@@ -204,6 +212,9 @@ func (p *Instances) View(c *ui.Context, data InstancesData, actions InstancesAct
 	ui.Column(c).Fill().MinWidth(0).MinHeight(0).Padding(pad, pad, 0, pad).Gap(kit.Gap(c)).Children(func() {
 		p.view(c, data, actions)
 	})
+	if p.tab == "servers" && data.Servers != nil {
+		p.serverMembersDialog(c, data.Servers)
+	}
 }
 
 func (p *Instances) view(c *ui.Context, data InstancesData, actions InstancesActions) {

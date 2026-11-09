@@ -37,6 +37,9 @@ func (p *Instances) changeTab(tab string, actions InstancesActions) {
 		return
 	}
 	p.tab, p.files = tab, ui.ListState{}
+	if tab != "servers" {
+		p.serverMembersOpen = false
+	}
 	for i, item := range instanceTabs {
 		if item.id == tab {
 			p.tabForward = i > p.tabIndex

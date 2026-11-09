@@ -161,7 +161,7 @@ func (a *app) instancesPage(c *ui.Context) {
 			a.openInstanceResources(instance.Key(), kind, true)
 		}
 	}
-	if ok && a.pages.instances.ServersOpen() {
+	if ok && a.pages.instances.DetailOpen() {
 		a.inspectServers(instance, false)
 	} else {
 		a.releaseServers()

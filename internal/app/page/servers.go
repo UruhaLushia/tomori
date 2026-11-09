@@ -2,7 +2,6 @@ package page
 
 import (
 	"fmt"
-	"strings"
 
 	"github.com/egoist/mygo/ui"
 
@@ -14,6 +13,8 @@ import (
 
 type ServerResult struct {
 	Value         serverstatus.Status
+	Icon          *ui.Bitmap
+	MemberIcons   map[string]*ui.Bitmap
 	Done, Loading bool
 	Error         string
 }
@@ -36,6 +37,7 @@ type ServerEditData struct {
 type ServersActions struct {
 	Refresh func()
 	Query   func(int)
+	Members func(int)
 	Edit    func(int, bool)
 }
 
@@ -66,20 +68,32 @@ func (p *Instances) servers(c *ui.Context, data *ServersData, actions ServersAct
 		result := data.Status[i]
 		locked := data.Locked || !data.Ready
 		mismatch := result.Done && result.Error == "" && !result.Value.Compatible(data.Protocol)
-		panel := kit.RowButton(c, entry.Name, false, nil).FillWidth().Height(kit.RowDoubleH()).Padding(0, 8).Gap(12).Radius(kit.RadiusM)
+		panel := kit.RowButton(c, entry.Name, false, func() {
+			if result.Done && result.Error == "" && actions.Members != nil {
+				actions.Members(i)
+			}
+		}).FillWidth().Height(kit.RowDoubleH()).Padding(0, 8).Gap(12).Radius(kit.RadiusM)
 		if panel.InView() && !result.Done && !result.Loading && actions.Query != nil {
 			actions.Query(i)
 		}
 		panel.Children(func() {
 			ui.Box(c).Size(32, 32).Shrink(0).Children(func() {
-				kit.IconBadge(c, kit.Grid, 32)
+				kit.ProjectIcon(c, result.Icon, 32)
 				if result.Done && result.Error == "" {
 					ui.Box(c).Absolute().Right(0).Bottom(0).Size(8, 8).Radius(kit.RadiusFull).Background(kit.Green)
 				}
 			})
 			ui.Column(c).Grow(1).MinWidth(0).Children(func() {
 				kit.Line(c, entry.Name, kit.Strong)
-				kit.Line(c, entry.Address, kit.Caption)
+				description := result.Value.Description
+				if description == "" {
+					if !result.Done {
+						description = locales.Searching()
+					} else if result.Error != "" {
+						description = locales.Offline()
+					}
+				}
+				kit.Line(c, description, kit.Caption).MaxLines(1).Ellipsis("…")
 			})
 			ui.Row(c).Width(kit.W(104)).Shrink(0).Gap(8).AlignItems(ui.Center).Justify(ui.End).Children(func() {
 				if panel.Hovered() || panel.FocusVisible() {
@@ -108,58 +122,4 @@ func (p *Instances) servers(c *ui.Context, data *ServersData, actions ServersAct
 			menu.Item(c, "delete", locales.Delete(), locked, func() { actions.Edit(i, true) }, kit.DangerTone)
 		})
 	})
-}
-
-func ServerEdit(c *ui.Context, data *ServerEditData, save, close func()) {
-	if !data.Open {
-		return
-	}
-	c.Key("server-edit")
-	dialog := kit.Dialog(c, &data.Open, kit.DialogS, func(back, panel ui.Element) {
-		panel.Children(func() {
-			title := locales.EditServer()
-			if data.New {
-				title = locales.AddServer()
-			} else if data.Remove {
-				title = locales.DeleteServer()
-			}
-			kit.DialogHeader(c, title, close)
-			if data.Remove {
-				kit.Label(c, data.Name, kit.Body).MaxLines(2).Ellipsis("…")
-				kit.Label(c, data.Address, kit.Body).TextColor(kit.Muted).MaxLines(1).Ellipsis("…")
-			} else {
-				for _, field := range []struct {
-					label string
-					value *string
-				}{{locales.ServerName(), &data.Name}, {locales.ServerAddress(), &data.Address}} {
-					c.Key(field.label)
-					ui.Column(c).FillWidth().Gap(8).Children(func() {
-						kit.Label(c, field.label, kit.Body).TextColor(kit.Muted)
-						kit.Input(c, field.value).FillWidth().Label(field.label).Disabled(data.Busy).OnSubmit(save)
-					})
-				}
-				ui.Row(c).FillWidth().Gap(12).AlignItems(ui.Center).Children(func() {
-					kit.Label(c, locales.ServerResourcePack(), kit.Body).Grow(1).MinWidth(0)
-					options := []kit.SelectOption[int]{{Value: 0, Label: locales.Ask()}, {Value: 1, Label: locales.Enable()}, {Value: 2, Label: locales.Disable()}}
-					kit.Select(c, &data.Textures, options[max(0, min(2, data.Textures))].Label, options, 90, 140, nil).Label(locales.ServerResourcePack()).Disabled(data.Busy)
-				})
-			}
-			if data.Error != "" {
-				kit.ErrorText(c, data.Error).MaxLines(3).Ellipsis("…")
-			}
-			kit.DialogFooter(c, func() {
-				if data.Busy {
-					ui.Spinner(c).Size(16, 16)
-				}
-				if data.Remove {
-					kit.Danger(c, locales.Delete(), save).Disabled(data.Busy)
-				} else {
-					kit.Primary(c, locales.Save(), save).Disabled(data.Busy || strings.TrimSpace(data.Name) == "" || strings.TrimSpace(data.Address) == "")
-				}
-			})
-		})
-	})
-	if dialog.Dismissed() {
-		close()
-	}
 }

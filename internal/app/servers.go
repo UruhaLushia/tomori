@@ -2,9 +2,11 @@ package app
 
 import (
 	"context"
+	"strings"
 
 	"github.com/egoist/mygo/ui"
 
+	"github.com/UruhaLushia/tomori/internal/account"
 	"github.com/UruhaLushia/tomori/internal/app/page"
 	"github.com/UruhaLushia/tomori/internal/instancecontent"
 	"github.com/UruhaLushia/tomori/internal/minecraft"
@@ -123,13 +125,67 @@ func (a *app) queryServer(index int) {
 				return
 			}
 			s.pending--
-			result := page.ServerResult{Done: true, Value: value}
+			var bitmap *ui.Bitmap
+			if err == nil && len(value.Icon) > 0 {
+				if icon, decodeErr := minecraft.DecodeInstanceIcon(value.Icon); decodeErr == nil {
+					bitmap = ui.NewBitmap(icon)
+				}
+			}
+			value.Icon = nil
+			memberIcons := make(map[string]*ui.Bitmap, len(value.Members))
+			for i, member := range value.Members {
+				if i >= 32 {
+					break
+				}
+				id := member.UUID
+				if id == "" {
+					id = member.Name
+				}
+				memberIcons[id] = ui.NewBitmap(account.DefaultAvatar(account.Account{Name: member.Name, UUID: id}))
+			}
+			result := page.ServerResult{Done: true, Value: value, Icon: bitmap, MemberIcons: memberIcons}
 			if err != nil {
 				result.Error = err.Error()
 			}
 			s.data.Status[index] = result
 		})
 	})
+}
+
+func (a *app) loadServerMemberAvatars(index int, token uint64, members []serverstatus.Member) {
+	ctx := a.servers.ctx
+	cacheDir, proxy, budget := a.cfg.CacheDirectory(), a.cfg.Download.Proxy, a.downloadBudget
+	for i, member := range members {
+		if i >= 32 {
+			break
+		}
+		member := member
+		uuid := strings.ReplaceAll(member.UUID, "-", "")
+		if len(uuid) != 32 {
+			continue
+		}
+		a.workers.Go(func() {
+			client := account.NewClient(proxy, budget)
+			defer client.Close()
+			portrait, err := client.Avatar(ctx, cacheDir, account.Account{ID: "server:" + uuid, Kind: account.Microsoft, Name: member.Name, UUID: uuid})
+			if err != nil || portrait == nil {
+				return
+			}
+			bitmap := ui.NewBitmap(portrait)
+			a.win.Update(func() {
+				s := &a.servers
+				if ctx.Err() != nil || a.ctx.Err() != nil || token != s.request {
+					return
+				}
+				result := s.data.Status[index]
+				if result.MemberIcons == nil {
+					result.MemberIcons = make(map[string]*ui.Bitmap)
+				}
+				result.MemberIcons[member.UUID] = bitmap
+				s.data.Status[index] = result
+			})
+		})
+	}
 }
 
 func (a *app) serverInstance() (minecraft.Instance, bool) {
@@ -218,7 +274,19 @@ func (a *app) serverEditView(c *ui.Context) {
 }
 
 func (a *app) serverActions() page.ServersActions {
-	return page.ServersActions{Refresh: a.refreshServers, Query: a.queryServer, Edit: a.openServerEdit}
+	return page.ServersActions{Refresh: a.refreshServers, Query: a.queryServer, Members: a.showServerMembers, Edit: a.openServerEdit}
+}
+
+func (a *app) showServerMembers(index int) {
+	if index < 0 || index >= len(a.servers.data.List.Entries) {
+		return
+	}
+	result := a.servers.data.Status[index]
+	if !result.Done || result.Error != "" {
+		return
+	}
+	a.pages.instances.ShowServerMembers(index)
+	a.loadServerMemberAvatars(index, a.servers.request, result.Value.Members)
 }
 
 func (a *app) serversBusy() bool {
