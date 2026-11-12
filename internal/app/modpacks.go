@@ -186,8 +186,8 @@ func (a *app) dropFiles(paths []string) {
 	}
 	if a.resources.data.Open && !a.resources.data.Online && (!a.resources.data.Embedded || a.page == pageInstances && a.pages.instances.ResourceKind() == a.resources.data.Kind) {
 		a.importResourcePaths(paths)
-	} else if len(paths) == 1 && isPackFile(paths[0]) {
-		a.inspectPack(paths[0])
+	} else {
+		a.startResourceImport(paths)
 	}
 }
 

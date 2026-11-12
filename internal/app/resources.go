@@ -613,7 +613,7 @@ func (a *app) importResourcePaths(paths []string) {
 		if world != "" {
 			count, err = service.ImportWorldPacks(ctx, instance, world, paths)
 		} else {
-			count, err = resource.Import(ctx, root, kind, paths)
+			count, err = resource.Import(ctx, root, kind, paths, resource.Compatibility{GameVersion: instance.GameVersion, Loader: instance.Loader, Loaders: instance.Loaders})
 		}
 		return fmt.Sprintf(locales.Imported2(), count, kind.Label()), err
 	})

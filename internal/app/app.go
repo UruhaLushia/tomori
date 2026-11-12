@@ -87,6 +87,7 @@ type app struct {
 	directoryPicker     directoryPicker
 	directoryEditor     directoryEditor
 	resources           resourceState
+	resourceImport      resourceImportState
 	instanceContent     instanceContentState
 	servers             serverState
 	appearance          appearanceState

@@ -128,13 +128,18 @@ func readSmall(r io.Reader) ([]byte, error) {
 
 func parseModMetadata(name string, raw []byte, entry *Entry) error {
 	var id, title, version, description, loader string
+	var versions []string
 	switch name {
 	case "fabric.mod.json", "litemod.json":
-		var data struct{ ID, Name, Version, Description string }
+		var data struct {
+			ID, Name, Version, Description string
+			Depends                        map[string]json.RawMessage
+		}
 		if err := json.Unmarshal(raw, &data); err != nil {
 			return err
 		}
 		id, title, version, description, loader = data.ID, data.Name, data.Version, data.Description, "Fabric"
+		versions = dependencyVersions(data.Depends, "minecraft")
 		if name == "litemod.json" {
 			loader = "LiteLoader"
 		}
@@ -143,12 +148,22 @@ func parseModMetadata(name string, raw []byte, entry *Entry) error {
 			Quilt struct {
 				ID, Version string
 				Metadata    struct{ Name, Description string }
+				Depends     []struct {
+					ID       string          `json:"id"`
+					Versions json.RawMessage `json:"versions"`
+				}
 			} `json:"quilt_loader"`
 		}
 		if err := json.Unmarshal(raw, &data); err != nil {
 			return err
 		}
 		id, title, version, description, loader = data.Quilt.ID, data.Quilt.Metadata.Name, data.Quilt.Version, data.Quilt.Metadata.Description, "Quilt"
+		for _, dependency := range data.Quilt.Depends {
+			if dependency.ID == "minecraft" {
+				versions = dependencyValues(dependency.Versions)
+				break
+			}
+		}
 	case "META-INF/mods.toml", "META-INF/neoforge.mods.toml":
 		var data struct {
 			Mods []struct {
@@ -157,6 +172,10 @@ func parseModMetadata(name string, raw []byte, entry *Entry) error {
 				Version     string `toml:"version"`
 				Description string `toml:"description"`
 			} `toml:"mods"`
+			Dependencies map[string][]struct {
+				ID      string `toml:"modId"`
+				Version string `toml:"versionRange"`
+			} `toml:"dependencies"`
 		}
 		if err := toml.Unmarshal(raw, &data); err != nil {
 			return err
@@ -169,10 +188,18 @@ func parseModMetadata(name string, raw []byte, entry *Entry) error {
 		if name == "META-INF/neoforge.mods.toml" {
 			loader = "NeoForge"
 		}
+		for _, dependencies := range data.Dependencies {
+			for _, dependency := range dependencies {
+				if dependency.ID == "minecraft" && dependency.Version != "" {
+					versions = append(versions, dependency.Version)
+				}
+			}
+		}
 	case "mcmod.info":
 		type mod struct {
 			ID                         string `json:"modid"`
 			Name, Version, Description string
+			GameVersion                string `json:"mcversion"`
 		}
 		var list []mod
 		if err := json.Unmarshal(raw, &list); err != nil {
@@ -188,12 +215,45 @@ func parseModMetadata(name string, raw []byte, entry *Entry) error {
 			return nil
 		}
 		id, title, version, description, loader = list[0].ID, list[0].Name, list[0].Version, list[0].Description, "Forge"
+		versions = append(versions, list[0].GameVersion)
 	}
 	if title != "" {
 		entry.Name = title
 	}
 	entry.ID, entry.Version, entry.Description, entry.Loader = id, version, strings.TrimSpace(description), loader
+	entry.GameVersions = compactVersions(versions)
 	return nil
+}
+
+func dependencyVersions(dependencies map[string]json.RawMessage, id string) []string {
+	return dependencyValues(dependencies[id])
+}
+
+func dependencyValues(raw json.RawMessage) []string {
+	if len(raw) == 0 {
+		return nil
+	}
+	var value string
+	if json.Unmarshal(raw, &value) == nil {
+		return []string{value}
+	}
+	var values []string
+	if json.Unmarshal(raw, &values) == nil {
+		return values
+	}
+	return nil
+}
+
+func compactVersions(values []string) []string {
+	result := values[:0]
+	for _, value := range values {
+		value = strings.TrimSpace(value)
+		if value == "" || slices.Contains(result, value) {
+			continue
+		}
+		result = append(result, value)
+	}
+	return result
 }
 
 func componentText(raw json.RawMessage) string {

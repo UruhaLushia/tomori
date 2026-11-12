@@ -26,6 +26,7 @@ func (a *app) view(c *ui.Context) {
 	})
 	a.dialogsView(c)
 	a.resourcesView(c)
+	a.resourceImportView(c)
 	a.directoryEditorView(c)
 	a.packImportView(c)
 	a.instanceSettingsView(c)

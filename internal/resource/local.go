@@ -216,7 +216,7 @@ func hashFile(ctx context.Context, f *os.File, entry *Entry) (string, error) {
 }
 
 // Import preserves existing files and returns individual failures for a batch.
-func Import(ctx context.Context, gameDir string, kind Kind, paths []string) (int, error) {
+func Import(ctx context.Context, gameDir string, kind Kind, paths []string, compatibility Compatibility) (int, error) {
 	entries, err := Scan(ctx, gameDir, kind)
 	if err != nil {
 		return 0, err
@@ -234,8 +234,11 @@ func Import(ctx context.Context, gameDir string, kind Kind, paths []string) (int
 			return count, err
 		}
 		candidate, err := Inspect(ctx, path, kind)
-		if err == nil && candidate.Directory {
+		if err == nil && candidate.Directory && kind != ResourcePack && kind != ShaderPack {
 			err = errors.New(locales.SelectResourceFiles())
+		}
+		if err == nil {
+			err = candidate.Validate(compatibility)
 		}
 		if err == nil && kind == Mod && candidate.ID != "" && !strings.HasSuffix(filepath.Base(path), ".disabled") && activeIDs[candidate.ID] != "" {
 			err = fmt.Errorf(locales.ModAlreadyExists(), activeIDs[candidate.ID])
@@ -296,20 +299,12 @@ func importFile(ctx context.Context, gameDir string, kind Kind, path, expected s
 	if err := fsutil.ValidateID(name); err != nil {
 		return nil, err
 	}
-	if !kind.Accepts(name, false) {
+	info, err := os.Lstat(path)
+	if err != nil {
+		return nil, err
+	}
+	if !kind.Accepts(name, info.IsDir()) {
 		return nil, errors.New(locales.UnsupportedFileType())
-	}
-	in, err := fsutil.OpenRegular(path)
-	if err != nil {
-		return nil, err
-	}
-	defer func() { _ = in.Close() }()
-	info, err := in.Stat()
-	if err != nil {
-		return nil, err
-	}
-	if !info.Mode().IsRegular() {
-		return nil, errors.New(locales.SelectResourceFiles())
 	}
 	dir, err := Directory(gameDir, kind)
 	if err != nil {
@@ -319,6 +314,61 @@ func importFile(ctx context.Context, gameDir string, kind Kind, path, expected s
 		return nil, err
 	}
 	root, err := os.OpenRoot(dir)
+	if err != nil {
+		return nil, err
+	}
+	for _, existing := range []string{name, name + ".disabled", filepath.Join(disabledDirectory, name)} {
+		if _, err := root.Lstat(existing); err == nil {
+			_ = root.Close()
+			return nil, errors.New(locales.AResourceWithThisNameAlreadyExists())
+		} else if !errors.Is(err, os.ErrNotExist) {
+			_ = root.Close()
+			return nil, err
+		}
+	}
+	if info.IsDir() {
+		source, err := os.OpenRoot(path)
+		if err != nil {
+			_ = root.Close()
+			return nil, err
+		}
+		stage, err := os.MkdirTemp(dir, ".tomori-resource-*")
+		if err == nil {
+			var target *os.Root
+			target, err = os.OpenRoot(stage)
+			if err == nil {
+				copier := fsutil.NewTreeCopier(ctx, target, nil, nil)
+				err = copier.Tree(source, nil)
+				if closeErr := copier.Close(); err == nil {
+					err = closeErr
+				}
+				err = errors.Join(err, target.Close())
+			}
+			if err == nil {
+				err = os.Rename(stage, filepath.Join(dir, name))
+			}
+			if err != nil {
+				_ = os.RemoveAll(stage)
+			}
+		}
+		_ = source.Close()
+		_ = root.Close()
+		return nil, err
+	}
+	_ = root.Close()
+	in, err := fsutil.OpenRegular(path)
+	if err != nil {
+		return nil, err
+	}
+	defer func() { _ = in.Close() }()
+	info, err = in.Stat()
+	if err != nil {
+		return nil, err
+	}
+	if !info.Mode().IsRegular() {
+		return nil, errors.New(locales.SelectResourceFiles())
+	}
+	root, err = os.OpenRoot(dir)
 	if err != nil {
 		return nil, err
 	}

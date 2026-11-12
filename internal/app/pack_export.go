@@ -113,7 +113,7 @@ func (a *app) packExportView(c *ui.Context) {
 }
 
 func (a *app) pathDialogsOpen() bool {
-	return a.directoryPicker.data.Open || a.directoryEditor.data.Open || a.instanceEdit.data.Open || a.instanceCopy.data.Open || a.worldEdit.data.Open || a.worldArchive.data.Open || a.worldBackups.data.Open || a.screenshotEdit.data.Open || a.servers.data.Edit.Open || a.appearance.data.Open || a.logDiagnostic.data.Open || a.packExport.data.Open || a.components.data.Open || a.packUpdate.data.Open || a.packAssociate.data.Open || a.packRestore.data.Open || a.packRecovery.data.Open
+	return a.directoryPicker.data.Open || a.directoryEditor.data.Open || a.instanceEdit.data.Open || a.instanceCopy.data.Open || a.worldEdit.data.Open || a.worldArchive.data.Open || a.worldBackups.data.Open || a.screenshotEdit.data.Open || a.servers.data.Edit.Open || a.appearance.data.Open || a.logDiagnostic.data.Open || a.packExport.data.Open || a.components.data.Open || a.packUpdate.data.Open || a.packAssociate.data.Open || a.packRestore.data.Open || a.packRecovery.data.Open || a.resourceImport.data.Open
 }
 
 func (a *app) chooseExportDirectory(directory string, request uint64) {

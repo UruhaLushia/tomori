@@ -28,6 +28,7 @@ func (a *app) closeViews() {
 	a.closeAppearance()
 	a.closePackImport()
 	a.closeResources()
+	a.closeResourceImport()
 	a.closeDirectoryEditor()
 	a.closeComponents()
 	a.closeInstanceEdit()
