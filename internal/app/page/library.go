@@ -115,7 +115,7 @@ func overviewInfo(c *ui.Context, v minecraft.Instance, data InstancesData) {
 			stat := data.Statistics[v.Key()]
 			played := locales.NotPlayedYet()
 			if stat.Seconds > 0 || !stat.LastPlayed.IsZero() {
-				played = fmt.Sprintf("%.1f %s", float64(stat.Seconds)/3600, locales.Hours())
+				played = playDuration(float64(stat.Seconds))
 			}
 			overviewFact(c, kit.Clock, locales.PlayTime(), played, "")
 			if when := relativePlayTime(stat.LastPlayed); when != "" {

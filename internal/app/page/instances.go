@@ -455,9 +455,9 @@ func libraryCellData(v minecraft.Instance, data InstancesData) kit.CellData {
 	stat := data.Statistics[v.Key()]
 	stats := locales.NotPlayedYet()
 	if stat.Seconds > 0 {
-		stats = fmt.Sprintf(locales.HoursTotal(), float64(stat.Seconds)/3600)
+		stats = playDuration(float64(stat.Seconds))
 		if stat.Known && stat.Mods > 0 {
-			stats = fmt.Sprintf(locales.ModsHoursPlayed(), stat.Mods, float64(stat.Seconds)/3600)
+			stats = fmt.Sprintf("%s · %s", fmt.Sprintf(locales.Mods2(), stat.Mods), stats)
 		}
 	}
 	return kit.CellData{Icon: data.Icons[v.Key()], Title: v.Name, Subtitle: kit.MetaLine(v.GameVersion, v.Loader), Stats: stats, Running: activity.Running}

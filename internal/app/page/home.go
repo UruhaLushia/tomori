@@ -2,12 +2,15 @@ package page
 
 import (
 	"fmt"
+	"math"
+	"time"
+
+	"github.com/egoist/mygo/ui"
+
 	"github.com/UruhaLushia/tomori/internal/account"
 	"github.com/UruhaLushia/tomori/internal/kit"
 	"github.com/UruhaLushia/tomori/internal/minecraft"
 	"github.com/UruhaLushia/tomori/locales"
-	"github.com/egoist/mygo/ui"
-	"time"
 )
 
 type HomeData struct {
@@ -98,7 +101,7 @@ func (p *HomeState) View(c *ui.Context, data HomeData, actions HomeActions) {
 							minWidth, maxWidth = kit.W(200), kit.W(240)
 						}
 						ui.Column(c).Grow(2).Basis(minWidth).MinWidth(0).MaxWidth(maxWidth).Shrink(0).Gap(24).Children(func() {
-							ui.Column(c).FillWidth().Children(func() { homeStatistics(c, data) })
+							ui.Column(c).FillWidth().Children(func() { homeSimpleStatistics(c, data) })
 							ui.Column(c).FillWidth().Children(func() { homeUsage(c, data.Usage) })
 						})
 					})
@@ -360,12 +363,23 @@ type HomeRecent struct {
 
 type HomeStatistics struct {
 	Days                                 [7]float64
+	DayLaunches                          [7]int
+	Activity                             [24]float64
+	Packs                                []HomePackStatistics
 	Launches                             int
 	LastPlayed                           time.Time
 	Running                              string
 	CPU                                  float64
 	CPUReady                             bool
 	MemoryUsed, MemoryTotal, LauncherMiB int
+}
+
+type HomePackStatistics struct {
+	Key, Name     string
+	Days          [7]float64
+	LaunchesByDay [7]int
+	Total         float64
+	Launches      int
 }
 
 func (p *HomeState) recent(c *ui.Context, data HomeData, actions HomeActions) {
@@ -420,81 +434,49 @@ func (p *HomeState) recent(c *ui.Context, data HomeData, actions HomeActions) {
 	})
 }
 
-func homeStatistics(c *ui.Context, data HomeData) {
-	s := data.Statistics
+func homeSimpleStatistics(c *ui.Context, data HomeData) {
+	days, _, launches := playSummary(data.Statistics)
 	kit.SectionHeader(c, locales.Last7Days(), func() {
-		kit.Label(c, fmt.Sprintf(locales.Launches(), s.Launches), kit.Caption).SingleLine().Shrink(0)
+		kit.Label(c, fmt.Sprintf(locales.Launches(), launches), kit.Caption).SingleLine().Shrink(0)
 	})
 	total, peak := float64(0), float64(0)
-	for _, v := range s.Days {
-		total += v
-		peak = max(peak, v)
+	for _, value := range days {
+		total += value
+		peak = max(peak, value)
 	}
 	ui.Row(c).Gap(8).AlignItems(ui.Baseline).Margin(4, 0, 16, 0).Children(func() {
-		kit.Label(c, fmt.Sprintf("%.1f", total/3600), kit.Heading).SingleLine().Shrink(0).ContentTransition(kit.NumberMotion)
-		kit.Label(c, locales.Hours(), kit.Caption).SingleLine().Shrink(0)
+		kit.Label(c, playDuration(total), kit.Heading).SingleLine().Shrink(0).ContentTransition(kit.NumberMotion)
 	})
 	_, availableHeight := c.Size()
 	height := 48 + (availableHeight-480)*0.1
 	height = max(48, min(72, height))
-	ui.Row(c).FillWidth().Gap(8).Children(func() {
-		for i, value := range s.Days {
-			c.Key(i)
-			ui.Column(c).Grow(1).Basis(0).MinWidth(0).Gap(4).AlignItems(ui.Center).Children(func() {
-				kit.ChartBar(c, value, peak, height, i == 6)
-				day := time.Now().AddDate(0, 0, i-6).Weekday()
-				label := []func() string{locales.Sun, locales.Mon, locales.Tue, locales.Wed, locales.Thu, locales.Fri, locales.Sat}[day]
-				color := kit.Muted
-				if i == 6 {
-					label, color = locales.TodayCompact, kit.AccentText
-				}
-				kit.Label(c, label(), kit.Caption).SingleLine().Shrink(0).TextColor(color)
-			})
-		}
-	})
-}
-
-func homeUsage(c *ui.Context, s HomeUsage) {
-	kit.SectionHeader(c, locales.ResourceUsage(), func() { kit.MeterLegend(c, locales.Game(), locales.Other()) })
-	cpuValue, memValue := "—", "—"
-	cpuTip, memTip := "", ""
-	cpuGame, cpuOther, memGame, memOther := float64(0), float64(0), float64(0), float64(0)
-	if s.Ready {
-		cpuValue = fmt.Sprintf("%.0f / %.0f%%", s.CPUGame, s.CPUTotal)
-		cpuGame, cpuOther = s.CPUGame/100, max(0, s.CPUTotal-s.CPUGame)/100
-		cpuTip = fmt.Sprintf(locales.GameUsed(), s.CPUGame, s.CPUTotal)
-	}
-	if s.MemTotalMiB > 0 {
-		memValue = fmt.Sprintf("%.1f / %.1f / %.0f GB", float64(s.MemGameMiB)/1024, float64(s.MemUsedMiB)/1024, float64(s.MemTotalMiB)/1024)
-		memGame = float64(s.MemGameMiB) / float64(s.MemTotalMiB)
-		memOther = float64(max(0, s.MemUsedMiB-s.MemGameMiB)) / float64(s.MemTotalMiB)
-		memTip = fmt.Sprintf(locales.GameGbUsedGbTotalGb(), float64(s.MemGameMiB)/1024, float64(s.MemUsedMiB)/1024, float64(s.MemTotalMiB)/1024)
-	}
-	totalGB := float64(max(0, s.MemTotalMiB)) / 1024
-	valueWidth := max(kit.W(80), kit.TextWidth(c, "100 / 100%", kit.Caption), kit.TextWidth(c, fmt.Sprintf("%.1f / %.1f / %.0f GB", totalGB, totalGB, totalGB), kit.Caption))
-	homeUsageMeter(c, "CPU", cpuGame, cpuOther, cpuValue, cpuTip, valueWidth)
-	homeUsageMeter(c, locales.MemoryLabel(), memGame, memOther, memValue, memTip, valueWidth)
-	launcherCPU, launcherMemory := "CPU —", "—"
-	if s.LauncherMiB > 0 {
-		launcherCPU = fmt.Sprintf("CPU %.1f%%", max(0, s.CPULauncher))
-		launcherMemory = fmt.Sprintf("%d MB", s.LauncherMiB)
-	}
-	launcherLabel := locales.Launcher()
-	launcherLabelWidth := max(kit.W(40), kit.TextWidth(c, launcherLabel, kit.Caption)+kit.W(4))
-	ui.Row(c).FillWidth().Height(kit.H(28, kit.Caption)).Margin(4, 0, 0, 0).Gap(8).AlignItems(ui.Center).Children(func() {
-		kit.Line(c, launcherLabel, kit.Caption).Width(launcherLabelWidth).Shrink(0)
-		kit.Label(c, launcherCPU, kit.Caption).Grow(1).MinWidth(16).SingleLine().TextColor(kit.Text).ContentTransition(kit.NumberMotion)
-		kit.Label(c, launcherMemory, kit.Caption).Width(kit.W(80)).Shrink(0).SingleLine().TextAlign(ui.End).TextColor(kit.Text).ContentTransition(kit.NumberMotion)
-	})
-}
-
-func homeUsageMeter(c *ui.Context, label string, game, other float64, value, tooltip string, valueWidth float32) {
-	ui.Column(c).FillWidth().Gap(4).Tooltip(tooltip).Children(func() {
-		ui.Row(c).FillWidth().Height(kit.H(18, kit.Caption)).AlignItems(ui.Center).Children(func() {
-			kit.Label(c, label, kit.Caption).Grow(1).MinWidth(0).SingleLine()
-			kit.Label(c, value, kit.Caption).TextColor(kit.Text).Width(valueWidth).Shrink(0).SingleLine().TextAlign(ui.End).ContentTransition(kit.NumberMotion)
+	scalePeak := max(1, math.Ceil(peak/3600/4)) * 4 * 3600
+	today := time.Now()
+	ui.Row(c).FillWidth().Gap(6).AlignItems(ui.Start).Children(func() {
+		label := fmt.Sprintf("%.0fh", scalePeak/3600)
+		ui.Box(c).Width(kit.TextWidth(c, label, kit.Caption)).Height(height).Shrink(0).Children(func() {
+			kit.Label(c, label, kit.Caption).Absolute().Right(0).Top(-kit.LinePx(kit.Caption) / 2).SingleLine()
+			kit.Label(c, "0h", kit.Caption).Absolute().Right(0).Top(height - kit.LinePx(kit.Caption)/2).SingleLine()
 		})
-		kit.MeterBar(c, game, other)
+		ui.Box(c).Grow(1).MinWidth(0).Children(func() {
+			ui.Box(c).Absolute().Left(0).Right(0).Top(0).Height(1).Background(kit.LineSoft).PassThrough()
+			ui.Box(c).Absolute().Left(0).Right(0).Top(height).Height(1).Background(kit.LineSoft).PassThrough()
+			ui.Row(c).FillWidth().Gap(8).Children(func() {
+				for i, value := range days {
+					c.Key(i)
+					ui.Column(c).Grow(1).Basis(0).MinWidth(0).Gap(4).AlignItems(ui.Center).Children(func() {
+						kit.ChartBar(c, value, scalePeak, height, i == 6).Tooltip(playDuration(value))
+						day := today.AddDate(0, 0, i-6).Weekday()
+						label := []func() string{locales.Sun, locales.Mon, locales.Tue, locales.Wed, locales.Thu, locales.Fri, locales.Sat}[day]
+						color := kit.Muted
+						if i == 6 {
+							label, color = locales.TodayCompact, kit.AccentText
+						}
+						kit.Label(c, label(), kit.Caption).SingleLine().Shrink(0).TextColor(color)
+					})
+				}
+			})
+		})
 	})
 }
 

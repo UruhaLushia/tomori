@@ -23,6 +23,7 @@ const (
 	pageNetwork
 	pageAppearance
 	pageLogs
+	pageStatistics
 	pageAbout
 )
 
@@ -49,7 +50,7 @@ var sections = []struct {
 		{pageGeneral, locales.General},
 		{pageAppearance, locales.Appearance},
 	}},
-	{locales.More, pageLogs, []navigationItem{{pageLogs, locales.Logs}, {pageAbout, locales.About}}},
+	{locales.More, pageLogs, []navigationItem{{pageLogs, locales.Logs}, {pageStatistics, locales.Statistics}, {pageAbout, locales.About}}},
 }
 
 var sidebarAnimation = kit.MotionNavRail

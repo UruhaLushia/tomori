@@ -26,6 +26,7 @@ type pageState struct {
 	game             page.Game
 	download         page.Download
 	logs             page.Logs
+	statistics       page.Statistics
 	appearance       page.Appearance
 	downloadTasks    page.DownloadTasks
 	directoryPicker  page.DirectoryPicker
@@ -87,6 +88,7 @@ func (a *app) homePage(c *ui.Context) {
 		Icons:      a.icons.bitmaps,
 		Recent:     recent,
 		Statistics: a.homeStatistics(instance.Key()),
+		Usage:      page.HomeUsage{CPUTotal: a.home.cpu, CPUGame: a.home.gameCPU, CPULauncher: a.home.launcherCPU, MemUsedMiB: a.memory.UsedMiB, MemGameMiB: a.home.gameMiB, MemTotalMiB: a.memory.TotalMiB, LauncherMiB: a.home.launcherMiB, Ready: a.home.cpuReady},
 		Loading:    a.home.cancel != nil,
 		Account:    identity,
 		Avatar:     a.avatars[identity.ID].bitmap,
@@ -99,7 +101,6 @@ func (a *app) homePage(c *ui.Context) {
 		Status:     activity.Status,
 		Progress:   progress, Since: since, OtherRunning: otherRunning, OtherSince: otherSince,
 		BusyStatus: busyStatus, Failure: failure, FailureAction: a.home.failureAction, Activity: a.instanceActivity,
-		Usage: page.HomeUsage{CPUTotal: a.home.cpu, CPUGame: a.home.gameCPU, CPULauncher: a.home.launcherCPU, MemUsedMiB: a.memory.UsedMiB, MemGameMiB: a.home.gameMiB, MemTotalMiB: a.memory.TotalMiB, LauncherMiB: a.home.launcherMiB, Ready: a.home.cpuReady},
 	}, page.HomeActions{
 		OpenLibrary:   func() { a.goPage(pageInstances) }, // nav:link
 		OpenDirectory: func() { a.openDirectory(instance.InstanceDir) },
@@ -139,6 +140,18 @@ func (a *app) homePage(c *ui.Context) {
 				a.chooseLogHistory(a.home.failureLog)
 			}
 		},
+	})
+}
+
+func (a *app) statisticsPage(c *ui.Context) {
+	a.refreshHome()
+	for _, instance := range a.installedList {
+		a.loadInstanceIcon(instance)
+	}
+	instance, _ := a.instanceByKey(a.currentVersion())
+	a.pages.statistics.View(c, page.StatisticsData{
+		Statistics: a.homeStatistics(instance.Key()),
+		Icons:      a.icons.bitmaps,
 	})
 }
 

@@ -12046,6 +12046,26 @@ func (msgs Messages) Hours() string {
 	return Catalog.Format(msgs.locale, "hours", nil)
 }
 
+// DurationHoursMinutes says "%d 小时 %d 分钟"
+// in the language the app shows.
+func DurationHoursMinutes() string { return In(i18n.Locale()).DurationHoursMinutes() }
+
+// DurationHoursMinutes says "%d 小时 %d 分钟"
+// in the language of msgs.
+func (msgs Messages) DurationHoursMinutes() string {
+	return Catalog.Format(msgs.locale, "duration_hours_minutes", nil)
+}
+
+// DurationMinutes says "%d 分钟"
+// in the language the app shows.
+func DurationMinutes() string { return In(i18n.Locale()).DurationMinutes() }
+
+// DurationMinutes says "%d 分钟"
+// in the language of msgs.
+func (msgs Messages) DurationMinutes() string {
+	return Catalog.Format(msgs.locale, "duration_minutes", nil)
+}
+
 // HoursLast7Days says "小时 · 近 7 天"
 // in the language the app shows.
 func HoursLast7Days() string { return In(i18n.Locale()).HoursLast7Days() }
@@ -14874,4 +14894,94 @@ func IncompatibleWithSelectedFilters() string {
 // in the language of msgs.
 func (msgs Messages) IncompatibleWithSelectedFilters() string {
 	return Catalog.Format(msgs.locale, "incompatible_with_selected_filters", nil)
+}
+
+// StatisticsSubtitle says "查看你的游戏时间和游玩习惯"
+// in the language the app shows.
+func StatisticsSubtitle() string { return In(i18n.Locale()).StatisticsSubtitle() }
+
+// StatisticsSubtitle says "查看你的游戏时间和游玩习惯"
+// in the language of msgs.
+func (msgs Messages) StatisticsSubtitle() string {
+	return Catalog.Format(msgs.locale, "statistics_subtitle", nil)
+}
+
+// DailyPlayTime says "每天的游玩时长"
+// in the language the app shows.
+func DailyPlayTime() string { return In(i18n.Locale()).DailyPlayTime() }
+
+// DailyPlayTime says "每天的游玩时长"
+// in the language of msgs.
+func (msgs Messages) DailyPlayTime() string {
+	return Catalog.Format(msgs.locale, "daily_play_time", nil)
+}
+
+// LaunchCount says "启动次数"
+// in the language the app shows.
+func LaunchCount() string { return In(i18n.Locale()).LaunchCount() }
+
+// LaunchCount says "启动次数"
+// in the language of msgs.
+func (msgs Messages) LaunchCount() string {
+	return Catalog.Format(msgs.locale, "launch_count", nil)
+}
+
+// ActiveDays says "活跃天数"
+// in the language the app shows.
+func ActiveDays() string { return In(i18n.Locale()).ActiveDays() }
+
+// ActiveDays says "活跃天数"
+// in the language of msgs.
+func (msgs Messages) ActiveDays() string {
+	return Catalog.Format(msgs.locale, "active_days", nil)
+}
+
+// AverageSession says "平均单次时长"
+// in the language the app shows.
+func AverageSession() string { return In(i18n.Locale()).AverageSession() }
+
+// AverageSession says "平均单次时长"
+// in the language of msgs.
+func (msgs Messages) AverageSession() string {
+	return Catalog.Format(msgs.locale, "average_session", nil)
+}
+
+// TimeTrend says "时间趋势"
+// in the language the app shows.
+func TimeTrend() string { return In(i18n.Locale()).TimeTrend() }
+
+// TimeTrend says "时间趋势"
+// in the language of msgs.
+func (msgs Messages) TimeTrend() string {
+	return Catalog.Format(msgs.locale, "time_trend", nil)
+}
+
+// GameDistribution says "游戏分布"
+// in the language the app shows.
+func GameDistribution() string { return In(i18n.Locale()).GameDistribution() }
+
+// GameDistribution says "游戏分布"
+// in the language of msgs.
+func (msgs Messages) GameDistribution() string {
+	return Catalog.Format(msgs.locale, "game_distribution", nil)
+}
+
+// DayDetail says "当日详情"
+// in the language the app shows.
+func DayDetail() string { return In(i18n.Locale()).DayDetail() }
+
+// DayDetail says "当日详情"
+// in the language of msgs.
+func (msgs Messages) DayDetail() string {
+	return Catalog.Format(msgs.locale, "day_detail", nil)
+}
+
+// ActivityPattern says "活跃规律"
+// in the language the app shows.
+func ActivityPattern() string { return In(i18n.Locale()).ActivityPattern() }
+
+// ActivityPattern says "活跃规律"
+// in the language of msgs.
+func (msgs Messages) ActivityPattern() string {
+	return Catalog.Format(msgs.locale, "activity_pattern", nil)
 }

@@ -60,6 +60,8 @@ type playHistorySummary struct {
 	first        time.Time
 	validUntil   time.Time
 	days         map[string][7]float64
+	dayLaunches  map[string][7]int
+	activity     [24]float64
 	launches     map[string]int
 	lastPlayed   map[string]time.Time
 	totals       map[string]int64
@@ -80,15 +82,16 @@ func (a *app) playHistory(now time.Time) *playHistorySummary {
 		}
 	}
 	*history = playHistorySummary{
-		valid:      true,
-		day:        today,
-		first:      today.AddDate(0, 0, -6),
-		validUntil: today.AddDate(0, 0, 1),
-		days:       make(map[string][7]float64),
-		launches:   make(map[string]int),
-		lastPlayed: make(map[string]time.Time),
-		totals:     make(map[string]int64),
-		sessions:   make(map[playHistoryKey]playHistorySession, len(activeSessions)),
+		valid:       true,
+		day:         today,
+		first:       today.AddDate(0, 0, -6),
+		validUntil:  today.AddDate(0, 0, 1),
+		days:        make(map[string][7]float64),
+		dayLaunches: make(map[string][7]int),
+		launches:    make(map[string]int),
+		lastPlayed:  make(map[string]time.Time),
+		totals:      make(map[string]int64),
+		sessions:    make(map[playHistoryKey]playHistorySession, len(activeSessions)),
 	}
 	for _, record := range a.cfg.PlayHistory {
 		if record.Started.After(now) && record.Started.Before(history.validUntil) {
@@ -108,6 +111,11 @@ func (a *app) playHistory(now time.Time) *playHistorySummary {
 		}
 		if record.Started.After(history.first) && record.Started.Before(now) {
 			history.launches[record.Instance]++
+			if index := playDayIndex(history.first, record.Started); index >= 0 {
+				launches := history.dayLaunches[record.Instance]
+				launches[index]++
+				history.dayLaunches[record.Instance] = launches
+			}
 		}
 		recordDays := [7]float64{}
 		addPlayDays(&recordDays, history.first, record.Started, seconds, 1)
@@ -116,6 +124,7 @@ func (a *app) playHistory(now time.Time) *playHistorySummary {
 			days[i] += value
 		}
 		history.days[record.Instance] = days
+		addPlayActivity(&history.activity, history.first, record.Started, seconds, 1, now)
 		if tracking {
 			for i, value := range recordDays {
 				session.days[i] += value
@@ -158,6 +167,46 @@ func addPlayDays(days *[7]float64, first, started time.Time, seconds int64, scal
 		}
 		if stop.After(start) {
 			days[i] += stop.Sub(start).Seconds() * scale
+		}
+	}
+}
+
+func playDayIndex(first, at time.Time) int {
+	at = at.In(first.Location())
+	for i := range [7]int{} {
+		day := first.AddDate(0, 0, i)
+		if at.Year() == day.Year() && at.YearDay() == day.YearDay() {
+			return i
+		}
+	}
+	return -1
+}
+
+func addPlayActivity(activity *[24]float64, first, started time.Time, seconds int64, scale float64, now time.Time) {
+	if seconds <= 0 {
+		return
+	}
+	start := started.In(first.Location())
+	end := start.Add(time.Duration(seconds) * time.Second)
+	if start.Before(first) {
+		start = first
+	}
+	if end.After(now) {
+		end = now
+	}
+	if !end.After(start) {
+		return
+	}
+	for hour := start.Truncate(time.Hour); hour.Before(end); hour = hour.Add(time.Hour) {
+		overlapStart, overlapEnd := start, end
+		if overlapStart.Before(hour) {
+			overlapStart = hour
+		}
+		if next := hour.Add(time.Hour); overlapEnd.After(next) {
+			overlapEnd = next
+		}
+		if overlapEnd.After(overlapStart) {
+			activity[hour.Hour()] += overlapEnd.Sub(overlapStart).Seconds() * scale
 		}
 	}
 }
@@ -357,20 +406,44 @@ func (a *app) homeStatistics(key string) page.HomeStatistics {
 	now := time.Now()
 	history := a.playHistory(now)
 	s := page.HomeStatistics{CPU: a.home.cpu, CPUReady: a.home.cpuReady, LauncherMiB: a.home.launcherMiB, MemoryUsed: a.memory.UsedMiB, MemoryTotal: a.memory.TotalMiB}
-	s.Days, s.Launches, s.LastPlayed = history.days[key], history.launches[key], history.lastPlayed[key]
-	for instance, session := range a.games {
-		if session == nil || session.playedAt.IsZero() {
-			continue
+	s.Days, s.DayLaunches, s.Launches, s.LastPlayed, s.Activity = history.days[key], history.dayLaunches[key], history.launches[key], history.lastPlayed[key], history.activity
+	for _, instance := range a.installedList {
+		days := history.days[instance.Key()]
+		dayLaunches := history.dayLaunches[instance.Key()]
+		if session := a.games[instance.Key()]; session != nil && !session.playedAt.IsZero() {
+			played := history.sessions[playHistoryKey{instance: instance.Key(), started: session.playedAt.UnixNano()}]
+			if played.count > 0 {
+				for i, value := range played.days {
+					days[i] -= value
+				}
+				seconds := int64(now.Sub(session.playedAt).Seconds())
+				addPlayDays(&days, history.first, session.playedAt, seconds, float64(played.count))
+				addPlayActivity(&s.Activity, history.first, session.playedAt, seconds, float64(played.count), now)
+			}
 		}
-		played := history.sessions[playHistoryKey{instance: instance, started: session.playedAt.UnixNano()}]
-		if played.count == 0 {
-			continue
+		total := float64(0)
+		for _, value := range days {
+			total += value
 		}
-		for i, value := range played.days {
-			s.Days[i] -= value
+		if total > 0 || instance.Key() == key {
+			s.Packs = append(s.Packs, page.HomePackStatistics{Key: instance.Key(), Name: instance.Name, Days: days, LaunchesByDay: dayLaunches, Total: total, Launches: history.launches[instance.Key()]})
 		}
-		addPlayDays(&s.Days, history.first, session.playedAt, int64(now.Sub(session.playedAt).Seconds()), float64(played.count))
 	}
+	slices.SortStableFunc(s.Packs, func(a, b page.HomePackStatistics) int {
+		if a.Key == key && b.Key != key {
+			return -1
+		}
+		if b.Key == key && a.Key != key {
+			return 1
+		}
+		if a.Total > b.Total {
+			return -1
+		}
+		if a.Total < b.Total {
+			return 1
+		}
+		return strings.Compare(a.Name, b.Name)
+	})
 	for _, v := range a.installedList {
 		if session := a.games[v.Key()]; session != nil && session.activity.Running {
 			s.Running = v.Name

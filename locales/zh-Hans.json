@@ -1159,6 +1159,8 @@
   "statistics": "统计",
   "launches": "启动 %d 次",
   "hours": "小时",
+  "duration_hours_minutes": "%d 小时 %d 分钟",
+  "duration_minutes": "%d 分钟",
   "hours_last_7_days": "小时 · 近 7 天",
   "memory_label": "内存",
   "today": "今天",
@@ -1432,5 +1434,14 @@
   "memory_information_read_failed_with_error": "读取内存失败：%w",
   "no_compatible_instances": "没有兼容的实例",
   "no_compatible_instances_hint": "当前筛选条件下没有兼容的实例，调整游戏版本或加载器筛选后再试",
-  "incompatible_with_selected_filters": "与所选版本或加载器不兼容"
+  "incompatible_with_selected_filters": "与所选版本或加载器不兼容",
+  "statistics_subtitle": "查看你的游戏时间和游玩习惯",
+  "daily_play_time": "每天的游玩时长",
+  "launch_count": "启动次数",
+  "active_days": "活跃天数",
+  "average_session": "平均单次时长",
+  "time_trend": "时间趋势",
+  "game_distribution": "游戏分布",
+  "day_detail": "当日详情",
+  "activity_pattern": "活跃规律"
 }

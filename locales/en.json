@@ -1159,6 +1159,8 @@
   "statistics": "Statistics",
   "launches": "%d launches",
   "hours": "hours",
+  "duration_hours_minutes": "%d hours %d minutes",
+  "duration_minutes": "%d minutes",
   "hours_last_7_days": "hours · last 7 days",
   "memory_label": "Memory",
   "today": "Today",
@@ -1432,5 +1434,14 @@
   "memory_information_read_failed_with_error": "Failed to read memory information: %w",
   "no_compatible_instances": "No compatible instances",
   "no_compatible_instances_hint": "No instances match the current filters. Adjust the game version or loader filter and try again",
-  "incompatible_with_selected_filters": "Incompatible with the selected version or loader"
+  "incompatible_with_selected_filters": "Incompatible with the selected version or loader",
+  "statistics_subtitle": "Review your play time and gaming habits",
+  "daily_play_time": "Daily play time",
+  "launch_count": "Launches",
+  "active_days": "Active days",
+  "average_session": "Average session",
+  "time_trend": "Time trend",
+  "game_distribution": "Game distribution",
+  "day_detail": "Day details",
+  "activity_pattern": "Activity pattern"
 }

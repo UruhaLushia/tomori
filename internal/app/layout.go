@@ -109,6 +109,8 @@ func (a *app) pageContent(c *ui.Context) {
 		a.appearancePage(c)
 	case pageLogs:
 		a.logsPage(c)
+	case pageStatistics:
+		a.statisticsPage(c)
 	case pageAbout:
 		a.aboutPage(c)
 	}
